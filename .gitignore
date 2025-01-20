@@ -1,0 +1,12 @@
+# Katalog wirtualnego środowiska Python:
+venv/
+# Pliki tymczasowe Pythona:
+__pycache__/
+*.pyc
+
+# Konfiguracje VSCode:
+.vscode/
+
+# Pliki tymczasowe/dane zbędne:
+*.log
+*.tmp

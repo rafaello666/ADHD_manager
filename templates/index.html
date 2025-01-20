@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>ADHD Manager – Pełny Layout</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- Ukryty input z czasem serwera -->
+<input type="hidden" id="serverNowValue" value="{{ server_now|default(0) }}" />
+
+<!-- Sekcja HERO -->
+<header class="hero-section">
+  <div class="hero-content">
+    <div class="big-circle">
+      <div class="circle-center">
+        <!-- Procent ukończonych zadań -->
+        <div class="circle-value">{{ completion_ratio }}%</div>
+        <div class="circle-label">Zadań ukończonych</div>
+      </div>
+    </div>
+    <h1 class="hero-title">Zarządzanie Zadaniami</h1>
+    <p class="hero-subtitle">
+      Ukończonych: {{ completed_tasks }} / {{ total_tasks }}
+    </p>
+    <button class="btn-cta" onclick="toggleTheme()">Przełącz Motyw</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Panel Statystyk -->
+  <div class="stats-panel">
+    <h2>Panel Statystyk</h2>
+    <p>
+      Ukończone: {{ completed_tasks }}<br>
+      Nieukończone: {{ not_completed }}<br>
+      Łącznie: {{ total_tasks }}
+    </p>
+    <!-- Archiwizacja ukończonych -->
+    <form action="{{ url_for('archive_completed') }}" method="POST"
+          onsubmit="return confirm('Na pewno archiwizować ukończone zadania?');">
+      <button type="submit" class="btn-action done">
+        Archiwizuj Ukończone
+      </button>
+    </form>
+  </div>
+
+  <!-- Lista Zadań -->
+  <div class="task-list">
+    <h2>Lista Zadań</h2>
+
+    <!-- Filtrowanie -->
+    <div style="margin-bottom:10px;">
+      <input type="text" id="searchInput" placeholder="Szukaj..." style="padding:6px;">
+      <button class="btn-action edit" onclick="applyFilter()">Szukaj</button>
+    </div>
+
+    <table class="task-table" id="taskTable">
+      <thead>
+        <tr>
+          <th data-sort="id">ID</th>
+          <th data-sort="title">Tytuł</th>
+          <th data-sort="priority">Priorytet</th>
+          <th data-sort="deadline">Deadline</th>
+          <th data-sort="status">Status</th>
+          <th>Timer</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        {% for task in tasks %}
+        <tr
+          id="row-{{ task.id }}"
+          data-task-id="{{ task.id }}"
+          data-timer-running="{{ task.timer_running|default(false)|string|lower }}"
+          data-timer-end="{{ task.timer_end|default(0) }}"
+        >
+          <td>{{ task.id }}</td>
+          <td>
+            {{ task.title }}
+            {% if task.tags %}
+              <br><small style="color:#aaa;">Tagi: {{ task.tags }}</small>
+            {% endif %}
+            {% if task.subtasks %}
+              <ul>
+                {% for st in task.subtasks %}
+                  <li>{{ st }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </td>
+          <td>
+            {% if task.priority > 7 %}
+              <span class="priority-tag high">Wysoki</span>
+            {% elif task.priority > 4 %}
+              <span class="priority-tag medium">Średni</span>
+            {% else %}
+              <span class="priority-tag low">Niski</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if task.deadline %}
+              {{ task.deadline }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            {% if task.completed %}
+              <span class="status-tag done">Ukończone</span>
+            {% else %}
+              <span class="status-tag ongoing">Nieukończone</span>
+            {% endif %}
+          </td>
+          <td class="time-cell">
+            <span class="countdown-display">--:--:--</span>
+            {% if task.timer_running %}
+              <!-- STOP -->
+              <form action="{{ url_for('stop_timer_route', task_id=task.id) }}"
+                    method="POST" style="display:inline;">
+                <button class="btn-action stop"
+                        onclick="return confirm('Na pewno STOP dla zadania {{task.id}}?');">
+                  STOP
+                </button>
+              </form>
+            {% else %}
+              <!-- PLAY -->
+              <form action="{{ url_for('start_timer_route', task_id=task.id) }}"
+                    method="POST" style="display:inline;">
+                <button class="btn-action play"
+                        onclick="return confirm('Uruchomić timer dla zadania {{task.id}}?');">
+                  PLAY
+                </button>
+              </form>
+            {% endif %}
+          </td>
+          <td>
+            {% if not task.completed %}
+              <!-- Odhacz -->
+              <form action="{{ url_for('complete_task_route', task_id=task.id) }}"
+                    method="POST" style="display:inline;"
+                    onsubmit="return confirm('Na pewno odhaczyć zadanie {{task.id}}?');">
+                <button type="submit" class="btn-action done">Odhacz</button>
+              </form>
+            {% else %}
+              <button class="btn-action done" style="opacity:0.5;" disabled>Odhacz</button>
+            {% endif %}
+
+            <!-- Edytuj -->
+            <a href="{{ url_for('edit_task_route', task_id=task.id) }}">
+              <button class="btn-action edit">Edytuj</button>
+            </a>
+
+            <!-- Usuń -->
+            <form action="{{ url_for('remove_task_route', task_id=task.id) }}"
+                  method="POST" style="display:inline;"
+                  onsubmit="return confirm('Na pewno usunąć zadanie {{task.id}}?');">
+              <button type="submit" class="btn-action delete">
+                Usuń
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <p>© ADHD Manager </p>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

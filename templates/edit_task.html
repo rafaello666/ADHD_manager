@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Edycja zadania – Ultra-ART</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Edycja Zadania</h1>
+      <p class="hero-subtitle">Uzupełnij lub zmień parametry i kliknij "Zapisz zmiany".</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <div style="grid-column: 1 / -1; background:#111; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(255,255,255,0.05);">
+      <h2 style="margin-bottom:16px;">Edytuj Zadanie: {{ task.id }}</h2>
+
+      <form method="POST" style="max-width:600px; margin:0 auto;">
+        <!-- Tytuł -->
+        <label>Tytuł:</label><br>
+        <input type="text" name="title" 
+               value="{{ task.title }}" 
+               style="width:100%; margin-bottom:16px;"><br>
+
+        <!-- Czas szacowany (h) -->
+        <label>Szacowany czas (h):</label><br>
+        <input type="text" name="estimated_time"
+               placeholder="np. 2.5"
+               value="{{ task.estimated_time|default('') }}"
+               style="margin-bottom:16px;"><br>
+
+        <!-- Tagi -->
+        <label>Tagi (przecinki):</label><br>
+        <input type="text" name="tags"
+               placeholder="np. strona, marketing"
+               value="{{ task.tags|default('') }}"
+               style="margin-bottom:16px; width:100%;"><br>
+
+        <!-- Subtasks -->
+        <label>Subtasks (rozdziel przecinkami):</label><br>
+        {% if task.subtasks %}
+          {% set subt_str = task.subtasks|join(', ') %}
+        {% else %}
+          {% set subt_str = '' %}
+        {% endif %}
+        <input type="text" name="subtasks"
+               placeholder="np. Kupić domenę, Zrobić logo"
+               value="{{ subt_str }}"
+               style="margin-bottom:16px; width:100%;"><br>
+
+        <button type="submit" class="btn-cta">Zapisz zmiany</button>
+      </form>
+    </div>
+
+    <div class="footer">
+      <p>Możesz wypełnić tylko wybrane pola – puste oznacza brak zmiany.</p>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
