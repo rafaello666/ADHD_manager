@@ -3,7 +3,7 @@ venv/
 # Pliki tymczasowe Pythona:
 __pycache__/
 *.pyc
-
+.env 
 # Konfiguracje VSCode:
 .vscode/
 

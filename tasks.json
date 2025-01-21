@@ -32,7 +32,7 @@
     "id": "task_2",
     "title": "sprzatanie wokol siebie",
     "completed": false,
-    "last_reminder": "2025-01-20T01:18:10.442720",
+    "last_reminder": null,
     "priority": 6.904761904761905,
     "pilne_dla_przetrwania": 10,
     "dlugoterminowe_znaczenie": 10,
@@ -51,7 +51,7 @@
     "tags": "",
     "subtasks": [],
     "timer_running": true,
-    "timer_end": 1737423897.0613081
+    "timer_end": 1737427223.6504066
   },
   {
     "id": "task_3",
@@ -210,8 +210,8 @@
   {
     "id": "task_16",
     "title": "Codzienne treningi aktywności fizycznej",
-    "completed": true,
-    "last_reminder": "2025-01-20T01:18:10.442720",
+    "completed": false,
+    "last_reminder": null,
     "priority": 8.518518518518519,
     "pilne_dla_przetrwania": 10,
     "dlugoterminowe_znaczenie": 10,
@@ -236,7 +236,7 @@
     "id": "task_17",
     "title": "Pilnowanie posiadania leków wg rozpiski",
     "completed": false,
-    "last_reminder": "2025-01-20T01:18:10.442720",
+    "last_reminder": null,
     "priority": 5.238095238095237,
     "pilne_dla_przetrwania": 10,
     "dlugoterminowe_znaczenie": 10,
@@ -411,7 +411,7 @@
     "id": "task_26",
     "title": "MYcie się",
     "completed": false,
-    "last_reminder": "2025-01-20T01:18:10.442720",
+    "last_reminder": null,
     "priority": 5.291005291005291,
     "pilne_dla_przetrwania": 10,
     "dlugoterminowe_znaczenie": 10,
