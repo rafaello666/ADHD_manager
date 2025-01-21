@@ -4,7 +4,7 @@
     "title": "stworzenie strony WWW o kindze i jej przewinieniach DYSKREDYTACJA",
     "completed": false,
     "last_reminder": "2025-01-20T01:18:10.442720",
-    "priority": 4.179894179894179,
+    "priority": 5.987654320987653,
     "pilne_dla_przetrwania": 6,
     "dlugoterminowe_znaczenie": null,
     "konsekwencje_opoznienia": 10,
@@ -33,7 +33,7 @@
     "title": "sprzatanie wokol siebie",
     "completed": false,
     "last_reminder": "2025-01-20T01:18:10.442720",
-    "priority": 3.3862433862433856,
+    "priority": 6.904761904761905,
     "pilne_dla_przetrwania": 10,
     "dlugoterminowe_znaczenie": 10,
     "konsekwencje_opoznienia": 5,
@@ -50,8 +50,8 @@
     "recurrence_pattern": "daily",
     "tags": "",
     "subtasks": [],
-    "timer_running": false,
-    "timer_end": null
+    "timer_running": true,
+    "timer_end": 1737423897.0613081
   },
   {
     "id": "task_3",
@@ -158,31 +158,6 @@
     "timer_end": null
   },
   {
-    "id": "task_7",
-    "title": "znalezienie swojej dziewczynki",
-    "completed": false,
-    "last_reminder": "2025-01-20T01:18:10.442720",
-    "priority": 7.777777777777779,
-    "pilne_dla_przetrwania": 10,
-    "dlugoterminowe_znaczenie": 10,
-    "konsekwencje_opoznienia": 10,
-    "czas_realizacji": 3,
-    "potrzebne_zasoby": 2,
-    "deadline_strictness": 4,
-    "wplyw_na_monike_1h": 10,
-    "wplyw_na_monike_3h": 10,
-    "wplyw_na_monike_12h": 10,
-    "wplyw_na_monike_48h": 10,
-    "deadline": null,
-    "estimated_time": 1.0,
-    "recurring": false,
-    "recurrence_pattern": null,
-    "tags": "relacje",
-    "subtasks": [],
-    "timer_running": false,
-    "timer_end": null
-  },
-  {
     "id": "task_8",
     "title": "nauka o chat gpt oraz technologii AI",
     "completed": false,
@@ -235,7 +210,7 @@
   {
     "id": "task_16",
     "title": "Codzienne treningi aktywności fizycznej",
-    "completed": false,
+    "completed": true,
     "last_reminder": "2025-01-20T01:18:10.442720",
     "priority": 8.518518518518519,
     "pilne_dla_przetrwania": 10,
@@ -254,8 +229,8 @@
     "recurrence_pattern": "daily",
     "tags": "zdrowie, codzienne",
     "subtasks": [],
-    "timer_running": true,
-    "timer_end": 1737417365.6109955
+    "timer_running": false,
+    "timer_end": null
   },
   {
     "id": "task_17",

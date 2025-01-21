@@ -1,13 +1,19 @@
-# twilio_sms.py
 import os
 from twilio.rest import Client
+from dotenv import load_dotenv
+load_dotenv()  # wczyta zmienne z pliku .env
 
-account_sid = "AC858c345bb5670c5eeda6f77f27e7e750"
-auth_token = "ff72bdb7768b11b467cecc094cb9865b"
-from_number = "+1 6206759113"
-to_number = "+48 514395284"  # docelowy
+# Pobieramy zmienne środowiskowe – tam ma być SID, TOKEN itd.
+account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+from_number = os.getenv("TWILIO_FROM_NUMBER")  # np. numer przydzielony przez Twilio
+to_number = os.getenv("TWILIO_TO_NUMBER")      # Twój docelowy numer
 
 def send_sms(message: str):
+    if not account_sid or not auth_token:
+        print("[ERROR] Brak danych uwierzytelniających Twilio (SID / TOKEN).")
+        return None
+
     client = Client(account_sid, auth_token)
     msg = client.messages.create(
         body=message,
