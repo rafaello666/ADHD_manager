@@ -1,161 +1,203 @@
-/* Zmienna dla siatki */
-:root {
-  --container-width: 1200px;
-  --columns: 12;
-  --gutter: 24px;
-}
-
-/* RESET */
-* {
+/* Reset CSS */
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Root variables for consistency */
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #0dcaf0;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --font-family: 'Montserrat', sans-serif;
+}
+
 /* Podstawowe style */
 body {
-  background: #111;
-  color: #ddd;
-  font-family: "Montserrat", sans-serif;
+  font-family: var(--font-family);
   font-size: 16px;
   line-height: 1.5;
+  background-color: var(--light-color);
+  color: var(--dark-color);
 }
 
-/* HERO */
+/* Styl stopki */
+footer {
+  background-color: var(--dark-color);
+  color: #fff;
+}
+
+/* Sekcja Hero */
 .hero-section {
-  width: 100%;
-  background: linear-gradient(135deg, #000 0%, #0b0b2b 100%);
-  padding: 40px 20px;
-  text-align: center;
-  border-radius: 0 0 20px 20px;
-  margin-bottom: 2rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--info-color) 100%);
+  color: #fff;
+  padding: 60px 0;
 }
-.hero-stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
+
+.hero-section h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 20px;
 }
+
+.hero-section p {
+  font-size: 1.25rem;
+}
+
 .hero-stat-box {
-  background-color: #fff;
-  color: #333;
-  padding: 1rem;
-  border-radius: 8px;
-  min-width: 180px;
-  margin-bottom: 1rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--dark-color);
+  padding: 25px;
+  border-radius: 10px;
   text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Container siatka */
-.container {
-  width: 100%;
-  max-width: var(--container-width);
-  margin: 40px auto;
-  display: grid;
-  grid-template-columns: repeat(var(--columns), 1fr);
-  column-gap: var(--gutter);
-  row-gap: 32px;
-  padding: 0 20px;
+.hero-stat-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Priority i status */
-.priority-high {
-  color: #ff4f4f;
+.hero-stat-box h4 {
+  font-size: 1.25rem;
+  margin-bottom: 15px;
+}
+
+.hero-stat-box p {
+  font-size: 1.5rem;
   font-weight: 700;
 }
-.priority-medium {
-  color: #ffc107;
+
+/* Karty */
+.card {
+  border-radius: 10px;
+}
+
+.card-header {
   font-weight: 600;
 }
-.priority-low {
-  color: #20c997;
-  font-weight: 600;
+
+.card-body {
+  padding: 20px;
 }
 
-/* Przyciski */
-.btn-action {
-  background: #444;
-  color: #fff;
-  border: none;
-  font-size: 0.85rem;
-  padding: 6px 10px;
-  border-radius: 4px;
-  margin-right: 6px;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.3s;
-}
-.btn-action:hover:not(:disabled) {
-  background: #5c2eff;
-  transform: scale(1.03);
+/* Tabela zadań */
+#taskTable th,
+#taskTable td {
+  vertical-align: middle;
 }
 
-/* Alarm row – miganie */
-@keyframes blinkAlarm {
-  0%, 50% {
-    background-color: red;
-    color: #000;
-  }
-  25%, 75% {
-    background-color: #500;
-    color: #fff;
-  }
-  100% {
-    background-color: red;
-    color: #000;
-  }
-}
-.alarm-row {
-  animation: blinkAlarm 1s infinite;
+#taskTable th {
+  background-color: #e9ecef;
+  text-align: center;
 }
 
-/* Motyw jasny */
-body.light-mode {
-  background: #ececec;
-  color: #333;
+#taskTable td {
+  text-align: center;
 }
 
-/* Dodatkowe klasy */
-.input-padding {
-  padding: 6px;
+.task-row.completed {
+  background-color: #d4edda;
 }
 
-.inline-form {
-  display: inline;
+.table-hover tbody tr:hover {
+  background-color: #f1f3f5;
 }
 
-.visually-hidden {
-  position: absolute !important;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-  border: 0;
+/* Priorytet */
+.badge.bg-danger {
+  background-color: var(--danger-color) !important;
 }
 
-/* Charts */
+.badge.bg-warning {
+  background-color: var(--warning-color) !important;
+  color: #212529 !important;
+}
+
+.badge.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+/* Countdown Display */
+#countdownDisplay {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 15px 0;
+  color: var(--dark-color);
+}
+
+/* Sekcja statystyk */
 .chart-container {
   position: relative;
   width: 100%;
   height: 400px;
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.chart-container canvas {
-  width: 100% !important;
-  height: 100% !important;
+/* Responsywność */
+@media (max-width: 992px) {
+  .hero-section h1 {
+    font-size: 2.5rem;
+  }
+  .hero-stat-box {
+    padding: 20px;
+  }
 }
 
-/* Stół */
-.task-table thead th {
-  background: #222;
-  color: #fff;
-}
-.task-table th, .task-table td {
-  padding: 14px 18px;
-  border-bottom: 1px solid #333;
+@media (max-width: 768px) {
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  .hero-stat-box {
+    padding: 15px;
+  }
+  .chart-container {
+    height: 300px;
+  }
 }
 
+@media (max-width: 576px) {
+  .hero-section h1 {
+    font-size: 1.75rem;
+  }
+  .hero-section p,
+  .hero-stat-box p {
+    font-size: 1rem;
+  }
+  .chart-container {
+    height: 250px;
+  }
+}
+.chart-container {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+  .btn-success:hover {
+    background-color: #218838;
+  }
+  
+  .btn-danger:hover {
+    background-color: #c82333;
+  }
+  
+  .btn-primary:hover {
+    background-color: #0a58ca;
+  }
+  @media (min-width: 992px) {
+    .form-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+  
+    .form-group label,
+    .form-group input {
+      flex: 1;
+    }
+  }
