@@ -24,9 +24,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
-<body>
+<body class="bg-light">
 
-<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand fw-bold" href="#">
@@ -47,13 +46,9 @@
   </div>
 </nav>
 
-<!-- HERO SECTION -->
 <section class="hero-section">
   <h1>Witaj w ADHD Manager</h1>
-  <p>
-    Kompleksowe narzędzie do zarządzania zadaniami, monitoringu HR/HRV
-    oraz priorytetyzacji zadań w oparciu o Twoje zdrowie psychofizyczne.
-  </p>
+  <p>Kompleksowe narzędzie do zarządzania zadaniami, monitoringu HR/HRV oraz priorytetyzacji zadań w oparciu o Twoje zdrowie psychofizyczne.</p>
   <div class="hero-stats">
     <div class="hero-stat-box">
       <h4>Ukończone zadania</h4>
@@ -67,7 +62,6 @@
   </div>
 </section>
 
-<!-- KARTA ODLICZANIA CZASU -->
 <div class="container countdown-timer-card">
   <div class="card shadow-sm">
     <div class="card-header bg-warning text-dark">
@@ -83,10 +77,8 @@
   </div>
 </div>
 
-<!-- GŁÓWNA ZAWARTOŚĆ -->
 <div class="container my-4">
   <div class="row g-4">
-    <!-- Panel dodawania zadań -->
     <div class="col-lg-4">
       <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
@@ -94,37 +86,28 @@
         </div>
         <div class="card-body">
           <form action="{{ url_for('add_task') }}" method="POST">
-            {{ csrf_token() }} <!-- CSRF Protection -->
+            {{ csrf_token() }}
             <div class="mb-3">
               <label for="title" class="form-label">Tytuł zadania</label>
-              <input type="text" name="title" id="title"
-                     class="form-control" required>
+              <input type="text" name="title" id="title" class="form-control" required>
             </div>
             <div class="mb-3">
               <label for="deadline" class="form-label">Deadline (opcjonalnie)</label>
-              <input type="datetime-local" name="deadline" id="deadline"
-                     class="form-control">
+              <input type="datetime-local" name="deadline" id="deadline" class="form-control">
             </div>
-            <button type="submit" class="btn btn-primary w-100">
-              Dodaj <i class="fa-solid fa-check-circle" aria-hidden="true"></i>
-            </button>
+            <button type="submit" class="btn btn-primary w-100">Dodaj <i class="fa-solid fa-check-circle" aria-hidden="true"></i></button>
           </form>
         </div>
       </div>
     </div>
 
-    <!-- Tabela zadań -->
     <div class="col-lg-8">
       <div class="card shadow-sm">
         <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
           <strong><i class="fa-solid fa-list-check" aria-hidden="true"></i> Lista Zadań</strong>
-          <!-- Filtrowanie -->
           <div class="d-inline-flex">
-            <input type="text" id="searchInput"
-                   class="form-control form-control-sm me-2"
-                   placeholder="Szukaj...">
-            <button class="btn btn-sm btn-secondary"
-                    onclick="applyFilter()">
+            <input type="text" id="searchInput" class="form-control form-control-sm me-2" placeholder="Szukaj...">
+            <button class="btn btn-sm btn-secondary" onclick="applyFilter()">
               <i class="fa-solid fa-search" aria-hidden="true"></i>
             </button>
           </div>
@@ -133,30 +116,20 @@
           <table class="table table-hover mb-0" id="taskTable">
             <thead class="table-light">
               <tr>
-                <th data-sort="id">ID</th>
-                <th data-sort="title">Tytuł</th>
-                <th data-sort="deadline">Deadline</th>
-                <th data-sort="priority">Priorytet</th>
-                <th data-sort="status">Status</th>
+                <th>ID</th>
+                <th>Tytuł</th>
+                <th>Deadline</th>
+                <th>Priorytet</th>
+                <th>Status</th>
                 <th class="text-end">Akcje</th>
               </tr>
             </thead>
             <tbody id="tableBody">
               {% for task in tasks %}
-              <tr id="row-{{ task.id }}"
-                  data-task-id="{{ task.id }}"
-                  data-timer-running="{{ task.timer_running|default(false)|string|lower }}"
-                  data-timer-end="{{ task.timer_end|default(0) }}"
-                  class="task-row {% if task.completed %}completed{% endif %}">
+              <tr id="row-{{ task.id }}" class="task-row {% if task.completed %}completed{% endif %}">
                 <td>{{ task.id }}</td>
                 <td>{{ task.title }}</td>
-                <td>
-                  {% if task.deadline %}
-                    {{ task.deadline }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
+                <td>{% if task.deadline %}{{ task.deadline }}{% else %}--{% endif %}</td>
                 <td>
                   {% if task.priority > 7 %}
                     <span class="priority-high">Wysoki</span>
@@ -166,21 +139,12 @@
                     <span class="priority-low">Niski</span>
                   {% endif %}
                 </td>
-                <td>
-                  {% if task.completed %}
-                    Ukończone
-                  {% else %}
-                    Nieukończone
-                  {% endif %}
-                </td>
+                <td>{% if task.completed %}Ukończone{% else %}Nieukończone{% endif %}</td>
                 <td class="text-end">
-                  <!-- Odhacz -->
                   {% if not task.completed %}
-                  <form action="{{ url_for('complete_task_route', task_id=task.id) }}"
-                        method="POST" style="display:inline;">
+                  <form action="{{ url_for('complete_task_route', task_id=task.id) }}" method="POST" style="display:inline;">
                     {{ csrf_token() }}
-                    <button class="btn btn-sm btn-success"
-                            onclick="return confirm('Na pewno ukończyć zadanie?');">
+                    <button class="btn btn-sm btn-success" onclick="return confirm('Na pewno ukończyć zadanie?');">
                       <i class="fa-solid fa-check" aria-hidden="true"></i>
                     </button>
                   </form>
@@ -189,12 +153,9 @@
                     <i class="fa-solid fa-check" aria-hidden="true"></i>
                   </button>
                   {% endif %}
-                  <!-- Usuń -->
-                  <form action="{{ url_for('remove_task_route', task_id=task.id) }}"
-                        method="POST" style="display:inline;">
+                  <form action="{{ url_for('remove_task_route', task_id=task.id) }}" method="POST" style="display:inline;">
                     {{ csrf_token() }}
-                    <button class="btn btn-sm btn-danger"
-                            onclick="return confirm('Na pewno usunąć zadanie?');">
+                    <button class="btn btn-sm btn-danger" onclick="return confirm('Na pewno usunąć zadanie?');">
                       <i class="fa-solid fa-trash" aria-hidden="true"></i>
                     </button>
                   </form>
@@ -209,7 +170,6 @@
   </div>
 </div>
 
-<!-- Statystyki / Wykresy -->
 <div class="container stats-section my-5">
   <h2 class="mb-3"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Statystyki Dnia</h2>
   <div class="row g-4">
@@ -225,7 +185,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-md-6">
       <div class="card shadow-sm">
         <div class="card-header bg-info text-white">
@@ -242,20 +201,16 @@
   </div>
 </div>
 
-<!-- STOPKA -->
 <footer>
   <p class="mb-0">© 2025 ADHD_Manager • Wszelkie prawa zastrzeżone.</p>
 </footer>
 
-<!-- Bootstrap Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-QProzsJ0ntpvWMVqXNBXZxoKhtxtU6JYwSN8D6EPJM3bSIXZQMhfEQ/3uQnMv9eE"
         crossorigin="anonymous"></script>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Przekazanie danych do JS -->
 <script>
   const priorityData = {
     wysoki: {{ priority_counts['wysoki'] }},
@@ -264,7 +219,6 @@
   };
 </script>
 
-<!-- Skrypt własny (filtrowanie, inicjalizacja wykresów, countdown) -->
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 </body>

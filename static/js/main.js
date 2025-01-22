@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
     serverTimestamp = parseFloat(serverNowElem.value) || 0;
   }
 
-  // Inicjalizacja sortowania
   const headers = document.querySelectorAll("#taskTable thead th[data-sort]");
   headers.forEach(h => {
     h.addEventListener("click", () => {
@@ -27,10 +26,119 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Timery
   initGlobalTimers();
+  initializeCharts();
+});
 
-  // Initialize Priority Chart
+function applyFilter() {
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const rows = document.querySelectorAll("#taskTable tbody tr");
+  rows.forEach(row => {
+    const title = row.children[1].innerText.toLowerCase();
+    const matches = title.includes(q);
+    row.style.display = matches || q === "" ? "" : "none";
+  });
+}
+
+let currentSortKey = null;
+let sortAsc = true;
+
+function sortTable(key, asc) {
+  const tbody = document.getElementById("taskTable").getElementsByTagName("tbody")[0];
+  const rowsArray = Array.from(tbody.querySelectorAll("tr"));
+
+  rowsArray.sort((a, b) => {
+    let valA = getCellValue(a, key);
+    let valB = getCellValue(b, key);
+
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return asc ? valA - valB : valB - valA;
+    } else {
+      valA = valA.toString().toLowerCase();
+      valB = valB.toString().toLowerCase();
+      if (valA < valB) return asc ? -1 : 1;
+      if (valA > valB) return asc ? 1 : -1;
+      return 0;
+    }
+  });
+
+  rowsArray.forEach(row => {
+    tbody.appendChild(row);
+  });
+}
+
+function getCellValue(row, key) {
+  switch(key) {
+    case "id":
+      return parseInt(row.children[0].innerText.trim());
+    case "title":
+      return row.children[1].innerText.trim().toLowerCase();
+    case "priority":
+      const text = row.children[3].innerText.trim();
+      if(text.includes("Wysoki")) return 3;
+      if(text.includes("Średni")) return 2;
+      if(text.includes("Niski"))  return 1;
+      return 0;
+    case "deadline":
+      const dl = row.children[2].innerText.trim();
+      return dl !== '-' ? new Date(dl).getTime() : 0;
+    case "status":
+      return row.children[4].innerText.trim() === "Ukończone" ? 1 : 0;
+    default:
+      return "";
+  }
+}
+
+function initGlobalTimers() {
+  const rows = document.querySelectorAll("#taskTable tbody tr");
+  const localLoadTime = Date.now() / 1000;
+
+  rows.forEach(row => {
+    const isRunning = row.dataset.timerRunning === "true";
+    if (!isRunning) return;
+
+    const endTs = parseFloat(row.dataset.timerEnd) || 0;
+    let remainSec;
+    if (USE_SERVER_TIME_SYNC && serverTimestamp > 0) {
+      let serverCalculatedNow = serverTimestamp + (Date.now() / 1000 - localLoadTime);
+      remainSec = Math.floor(endTs - serverCalculatedNow);
+    } else {
+      remainSec = Math.floor(endTs - (Date.now() / 1000));
+    }
+
+    if(remainSec <= 0) {
+      row.classList.add("alarm-row");
+      const disp = row.querySelector(".countdown-display");
+      if(disp) disp.textContent = "00:00:00";
+    } else {
+      startIntervalRow(row, remainSec);
+    }
+  });
+}
+
+function startIntervalRow(row, remainSec) {
+  if(!row) return;
+  const disp = row.querySelector(".countdown-display");
+  if(!disp) return;
+
+  function tick() {
+    if(remainSec <= 0) {
+      clearInterval(activeIntervals[row.id]);
+      row.classList.add("alarm-row");
+      disp.textContent = "00:00:00";
+      return;
+    }
+    let h = Math.floor(remainSec / 3600);
+    let m = Math.floor((remainSec % 3600)/60);
+    let s = remainSec % 60;
+    disp.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    remainSec--;
+  }
+  tick();
+  activeIntervals[row.id] = setInterval(tick, 1000);
+}
+
+function initializeCharts() {
   const priorityCanvas = document.getElementById('priorityChart');
   if (priorityCanvas) {
       const priorityCtx = priorityCanvas.getContext('2d');
@@ -68,7 +176,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // Initialize HR/HRV Chart
   const hrvCanvas = document.getElementById('hrvChart');
   if (hrvCanvas) {
       const hrvCtx = hrvCanvas.getContext('2d');
@@ -128,134 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
           }
       });
   }
-});
-
-/***************************************
-  Apply Filter Function
-***************************************/
-function applyFilter() {
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
-  const rows = document.querySelectorAll("#taskTable tbody tr");
-  rows.forEach(row => {
-    const title = row.children[1].innerText.toLowerCase();
-    const matches = title.includes(q);
-    row.style.display = matches || q === "" ? "" : "none";
-  });
 }
 
-/***************************************
-  Sort Table Function
-***************************************/
-let currentSortKey = null;
-let sortAsc = true;
-
-function sortTable(key, asc) {
-  const tbody = document.getElementById("taskTable").getElementsByTagName("tbody")[0];
-  const rowsArray = Array.from(tbody.querySelectorAll("tr"));
-
-  rowsArray.sort((a, b) => {
-    let valA = getCellValue(a, key);
-    let valB = getCellValue(b, key);
-
-    if (typeof valA === 'number' && typeof valB === 'number') {
-      return asc ? valA - valB : valB - valA;
-    } else {
-      valA = valA.toString().toLowerCase();
-      valB = valB.toString().toLowerCase();
-      if (valA < valB) return asc ? -1 : 1;
-      if (valA > valB) return asc ? 1 : -1;
-      return 0;
-    }
-  });
-
-  // Remove existing rows
-  while (tbody.firstChild) {
-    tbody.removeChild(tbody.firstChild);
-  }
-
-  // Append sorted rows
-  rowsArray.forEach(row => {
-    tbody.appendChild(row);
-  });
-}
-
-function getCellValue(row, key) {
-  switch(key) {
-    case "id":
-      return parseInt(row.children[0].innerText.trim());
-    case "title":
-      return row.children[1].innerText.trim().toLowerCase();
-    case "priority":
-      const text = row.children[3].innerText.trim();
-      if(text.includes("Wysoki")) return 3;
-      if(text.includes("Średni")) return 2;
-      if(text.includes("Niski"))  return 1;
-      return 0;
-    case "deadline":
-      const dl = row.children[2].innerText.trim();
-      return dl !== '-' ? new Date(dl).getTime() : 0;
-    case "status":
-      return row.children[4].innerText.trim() === "Ukończone" ? 1 : 0;
-    default:
-      return "";
-  }
-}
-
-/***************************************
-  Initialize Global Timers
-***************************************/
-function initGlobalTimers() {
-  const rows = document.querySelectorAll("#taskTable tbody tr");
-  const localLoadTime = Date.now() / 1000;
-
-  rows.forEach(row => {
-    const isRunning = row.dataset.timerRunning === "true";
-    if (!isRunning) return;
-
-    const endTs = parseFloat(row.dataset.timerEnd) || 0;
-    let remainSec;
-    if (USE_SERVER_TIME_SYNC && serverTimestamp > 0) {
-      let serverCalculatedNow = serverTimestamp + (Date.now() / 1000 - localLoadTime);
-      remainSec = Math.floor(endTs - serverCalculatedNow);
-    } else {
-      remainSec = Math.floor(endTs - (Date.now() / 1000));
-    }
-
-    if(remainSec <= 0) {
-      row.classList.add("alarm-row");
-      const disp = row.querySelector(".countdown-display");
-      if(disp) disp.textContent = "00:00:00";
-    } else {
-      startIntervalRow(row, remainSec);
-    }
-  });
-}
-
-function startIntervalRow(row, remainSec) {
-  if(!row) return;
-  const disp = row.querySelector(".countdown-display");
-  if(!disp) return;
-
-  function tick() {
-    if(remainSec <= 0) {
-      clearInterval(activeIntervals[row.id]);
-      row.classList.add("alarm-row");
-      disp.textContent = "00:00:00";
-      return;
-    }
-    let h = Math.floor(remainSec / 3600);
-    let m = Math.floor((remainSec % 3600) / 60);
-    let s = remainSec % 60;
-    disp.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    remainSec--;
-  }
-  tick();
-  activeIntervals[row.id] = setInterval(tick, 1000);
-}
-
-/***************************************
-  Toggle Theme Function
-***************************************/
 function toggleTheme() {
   document.body.classList.toggle("light-mode");
 }

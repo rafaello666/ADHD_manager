@@ -9,13 +9,13 @@ import sys
 import time
 import atexit
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import CSRFProtect
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFError
 
-# Import modułów aplikacji
+# Zakładane moduły aplikacji
 from tasks import get_all_tasks, save_task, remove_task, complete_task
 from calculations import calculate_priority
 from twilio_sms import send_sms
@@ -39,31 +39,24 @@ scheduler = BackgroundScheduler()
 def home():
     tasks = get_all_tasks()
 
-    # Policz statystyki
     total = len(tasks)
     completed_count = sum(1 for t in tasks if t.get("completed"))
-    completion_ratio = 0
-    if total > 0:
-        completion_ratio = round((completed_count / total) * 100, 1)
+    completion_ratio = round((completed_count / total) * 100, 1) if total > 0 else 0
 
-    # Sortuj zadania według priorytetu malejąco
     tasks.sort(key=lambda x: x.get("priority", 0), reverse=True)
 
-    # Przygotuj dane do wykresów
     priority_counts = {
         'wysoki': sum(1 for t in tasks if t.get('priority', 0) > 7),
         'sredni': sum(1 for t in tasks if 4 < t.get('priority', 0) <= 7),
         'niski': sum(1 for t in tasks if t.get('priority', 0) <= 4),
     }
 
-    return render_template(
-        "index.html",
-        tasks=tasks,
-        total_tasks=total,
-        completed_tasks=completed_count,
-        completion_ratio=completion_ratio,
-        priority_counts=priority_counts
-    )
+    return render_template("index.html",
+                           tasks=tasks,
+                           total_tasks=total,
+                           completed_tasks=completed_count,
+                           completion_ratio=completion_ratio,
+                           priority_counts=priority_counts)
 
 @app.route("/add_task", methods=["POST"])
 def add_task():
@@ -86,16 +79,12 @@ def add_task():
 @app.route("/tasks/<task_id>/complete", methods=["POST"])
 def complete_task_route(task_id):
     ok = complete_task(task_id)
-    if not ok:
-        return "Nie udało się ukończyć zadania", 404
-    return redirect(url_for("home"))
+    return redirect(url_for("home")) if ok else "Nie udało się ukończyć zadania", 404
 
 @app.route("/tasks/<task_id>/remove", methods=["POST"])
 def remove_task_route(task_id):
     rem = remove_task(task_id)
-    if not rem:
-        return "Nie znaleziono zadania do usunięcia", 404
-    return redirect(url_for("home"))
+    return redirect(url_for("home")) if rem else "Nie znaleziono zadania do usunięcia", 404
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
@@ -110,16 +99,12 @@ def remind_tasks():
         x["priority"] = prio
         save_task(x)
 
-    if not open_tasks:
-        print("[REMIND] Brak otwartych zadań.")
-        return
-
     open_tasks.sort(key=lambda x: x["priority"], reverse=True)
     top = open_tasks[0]
     top_id = top["id"]
 
-    print("[REMIND] Wysyłamy przypomnienie o top zadaniu.")
     msg = f"Nowy TOP: {top['title']} (Priorytet={top['priority']:.2f})"
+    print("[REMIND] Wysyłamy przypomnienie o top zadaniu.")
     send_sms(msg)
 
 def check_calendar_and_notify():
@@ -131,16 +116,11 @@ def check_calendar_and_notify():
         title = ev.get("summary", "Bez tytułu")
         loc = ev.get("location", "Brak lokalizacji")
         start_dt = ev.get("start")
-        if start_dt:
-            diff_min = compute_diff_minutes(start_dt)
-            msg = (
-                f"Uwaga! Za {diff_min} min: '{title}'. "
-                f"Lokalizacja: {loc}"
-            )
+        diff_min = compute_diff_minutes(start_dt) if start_dt else None
+        if diff_min is not None:
+            msg = f"Uwaga! Za {diff_min} min: '{title}'. Lokalizacja: {loc}"
             print("[CALENDAR] Wyślę SMS:", msg)
             send_sms(msg)
-        else:
-            print("[CALENDAR] Brak informacji o czasie rozpoczęcia wydarzenia.")
 
 def compute_diff_minutes(start_dt: datetime) -> int:
     now = datetime.now()
@@ -151,7 +131,6 @@ def start_scheduler():
     scheduler.add_job(remind_tasks, "interval", minutes=15)
     scheduler.add_job(check_calendar_and_notify, "interval", minutes=5)
     scheduler.add_job(run_hrv_monitor, "interval", minutes=5)
-    # Dodaj inne zadania według potrzeb
     scheduler.start()
     print("[SCHEDULER] Scheduler wystartował.")
 
@@ -162,6 +141,5 @@ def shutdown_scheduler():
         print("[SCHEDULER] Scheduler został zatrzymany.")
 
 if __name__ == "__main__":
-    # Uruchom scheduler przed startem aplikacji
     start_scheduler()
     app.run(host="0.0.0.0", port=5000, debug=True)

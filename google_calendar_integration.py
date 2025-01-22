@@ -23,6 +23,16 @@ CREDENTIALS_FILE = 'credentials.json'
 TOKEN_FILE = 'token.pickle'
 
 def get_service():
+    try:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            'credentials.json', SCOPES)
+        credentials = flow.run_local_server(port=0)
+        service = build('calendar', 'v3', credentials=credentials)
+        return service
+    except FileNotFoundError:
+        print("Error: 'credentials.json' file not found.")
+        return None
+
     creds = None
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, 'rb') as token:
