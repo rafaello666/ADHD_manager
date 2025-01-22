@@ -59,11 +59,20 @@ SCALES = {
     }
 }
 
-def get_scale_description(key: str)-> str:
+def get_scale_description(key: str) -> str:
+    """
+    Zwraca opis skali dla danego klucza.
+
+    Args:
+        key: Klucz skali.
+
+    Zwraca:
+        Opis skali jako string.
+    """
     if key not in SCALES:
         return "Brak zdefiniowanej skali."
     scale_dict = SCALES[key]
     lines = []
-    for k,v in scale_dict.items():
+    for k, v in scale_dict.items():
         lines.append(f"{k}: {v}")
     return "\n".join(lines)

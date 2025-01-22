@@ -1,65 +1,230 @@
+<!-- templates/edit_task.html -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <title>Edycja zadania – Ultra-ART</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8" />
+  <title>ADHD Manager – Edycja Zadań</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 
-  <header class="hero-section">
-    <div class="hero-content">
-      <h1 class="hero-title">Edycja Zadania</h1>
-      <p class="hero-subtitle">Uzupełnij lub zmień parametry i kliknij "Zapisz zmiany".</p>
+<!-- Ukryty input z czasem serwera do synchronizacji JS -->
+<input type="hidden" id="serverNowValue" value="{{ server_now|default(0) }}" />
+
+<!-- Sekcja HERO -->
+<header class="hero-section">
+  <div class="hero-content">
+    <div class="big-circle">
+      <div class="circle-center">
+        <div class="circle-value">{{ completion_ratio }}%</div>
+        <div class="circle-label">Zadań ukończonych</div>
+      </div>
     </div>
-  </header>
+    <h1 class="hero-title">Zarządzanie Zadaniami</h1>
+    <p class="hero-subtitle">
+      Ukończonych: {{ completed_tasks }} / {{ total_tasks }}
+    </p>
+    <button class="btn-cta" onclick="toggleTheme()">Przełącz Motyw</button>
+  </div>
+</header>
 
-  <div class="container">
-    <div style="grid-column: 1 / -1; background:#111; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(255,255,255,0.05);">
-      <h2 style="margin-bottom:16px;">Edytuj Zadanie: {{ task.id }}</h2>
+<div class="container">
 
-      <form method="POST" style="max-width:600px; margin:0 auto;">
-        <!-- Tytuł -->
-        <label>Tytuł:</label><br>
-        <input type="text" name="title" 
-               value="{{ task.title }}" 
-               style="width:100%; margin-bottom:16px;"><br>
+  <div class="stats-panel">
+    <h2>Panel Statystyk</h2>
+    <p>
+      Ukończone: {{ completed_tasks }}<br>
+      Nieukończone: {{ not_completed }}<br>
+      Łącznie: {{ total_tasks }}
+    </p>
+    <form action="{{ url_for('archive_completed') }}" method="POST"
+          onsubmit="return confirm('Na pewno archiwizować ukończone zadania?');" class="inline-form">
+      {{ csrf_token() }}
+      <button type="submit" class="btn-action done">Archiwizuj Ukończone</button>
+    </form>
+  </div>
 
-        <!-- Czas szacowany (h) -->
-        <label>Szacowany czas (h):</label><br>
-        <input type="text" name="estimated_time"
-               placeholder="np. 2.5"
-               value="{{ task.estimated_time|default('') }}"
-               style="margin-bottom:16px;"><br>
+  <!-- Statystyki / Wykresy -->
+  <div class="container stats-section my-5">
+    <h2 class="mb-3"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Statystyki Dnia</h2>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card shadow-sm">
+          <div class="card-header bg-info text-white">
+            <strong><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Rozkład Zadań wg. Priorytetu</strong>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="priorityChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <!-- Tagi -->
-        <label>Tagi (przecinki):</label><br>
-        <input type="text" name="tags"
-               placeholder="np. strona, marketing"
-               value="{{ task.tags|default('') }}"
-               style="margin-bottom:16px; width:100%;"><br>
-
-        <!-- Subtasks -->
-        <label>Subtasks (rozdziel przecinkami):</label><br>
-        {% if task.subtasks %}
-          {% set subt_str = task.subtasks|join(', ') %}
-        {% else %}
-          {% set subt_str = '' %}
-        {% endif %}
-        <input type="text" name="subtasks"
-               placeholder="np. Kupić domenę, Zrobić logo"
-               value="{{ subt_str }}"
-               style="margin-bottom:16px; width:100%;"><br>
-
-        <button type="submit" class="btn-cta">Zapisz zmiany</button>
-      </form>
-    </div>
-
-    <div class="footer">
-      <p>Możesz wypełnić tylko wybrane pola – puste oznacza brak zmiany.</p>
+      <div class="col-md-6">
+        <div class="card shadow-sm">
+          <div class="card-header bg-info text-white">
+            <strong><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i> Monitor HR/HRV</strong>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="hrvChart"></canvas>
+            </div>
+            <small class="text-muted">Dane przykładowe – podłącz rzeczywisty monitor HR/HRV.</small>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <div class="task-list">
+    <h2>Lista Zadań (Edycja)</h2>
+
+    <!-- Filtrowanie -->
+    <div style="margin-bottom:10px;">
+      <label for="searchInput" class="visually-hidden">Szukaj:</label>
+      <input type="text" id="searchInput" placeholder="Szukaj..." class="input-padding">
+      <button class="btn-action edit" onclick="applyFilter()">Szukaj</button>
+    </div>
+
+    <table class="task-table" id="taskTable">
+      <thead>
+        <tr>
+          <th data-sort="id">ID</th>
+          <th data-sort="title">Tytuł</th>
+          <th data-sort="priority">Priorytet</th>
+          <th data-sort="deadline">Deadline</th>
+          <th data-sort="status">Status</th>
+          <th>Timer</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        {% for task in tasks %}
+        <tr
+          id="row-{{ task.id }}"
+          data-task-id="{{ task.id }}"
+          data-timer-running="{{ task.timer_running|default(false)|string|lower }}"
+          data-timer-end="{{ task.timer_end|default(0) }}"
+        >
+          <td>{{ task.id }}</td>
+          <td>
+            {{ task.title }}
+            {% if task.tags %}
+              <br><small class="text-muted">Tagi: {{ task.tags }}</small>
+            {% endif %}
+            {% if task.subtasks %}
+              <ul>
+                {% for st in task.subtasks %}
+                  <li>{{ st }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </td>
+          <td>
+            {% if task.priority > 7 %}
+              <span class="priority-tag high">Wysoki</span>
+            {% elif task.priority > 4 %}
+              <span class="priority-tag medium">Średni</span>
+            {% else %}
+              <span class="priority-tag low">Niski</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if task.deadline %}
+              {{ task.deadline }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            {% if task.completed %}
+              <span class="status-tag done">Ukończone</span>
+            {% else %}
+              <span class="status-tag ongoing">Nieukończone</span>
+            {% endif %}
+          </td>
+          <td class="time-cell">
+            <span class="countdown-display">--:--:--</span>
+            {% if task.timer_running %}
+              <form action="{{ url_for('stop_timer_route', task_id=task.id) }}"
+                    method="POST" class="inline-form">
+                {{ csrf_token() }}
+                <button class="btn-action stop"
+                        onclick="return confirm('Na pewno STOP dla zadania {{ task.id }}?');">
+                  STOP
+                </button>
+              </form>
+            {% else %}
+              <form action="{{ url_for('start_timer_route', task_id=task.id) }}"
+                    method="POST" class="inline-form">
+                {{ csrf_token() }}
+                <button class="btn-action play"
+                        onclick="return confirm('Uruchomić timer dla zadania {{ task.id }}?');">
+                  PLAY
+                </button>
+              </form>
+            {% endif %}
+          </td>
+          <td>
+            {% if not task.completed %}
+              <form action="{{ url_for('complete_task_route', task_id=task.id) }}"
+                    method="POST" class="inline-form"
+                    onsubmit="return confirm('Na pewno odhaczyć zadanie {{task.id}}?');">
+                {{ csrf_token() }}
+                <label for="user_importance_{{ task.id }}" class="visually-hidden">Ważność:</label>
+                <select name="user_importance" id="user_importance_{{ task.id }}" style="margin-right:4px;">
+                  <option value="">-</option>
+                  <option value="1">1 (mało ważne)</option>
+                  <option value="2">2</option>
+                  <option value="3">3 (średnio)</option>
+                  <option value="4">4</option>
+                  <option value="5">5 (bardzo ważne)</option>
+                </select>
+
+                <button type="submit" class="btn-action done">Odhacz</button>
+              </form>
+            {% else %}
+              <button class="btn-action done" style="opacity:0.5;" disabled>Odhacz</button>
+            {% endif %}
+
+            <a href="{{ url_for('edit_task_route', task_id=task.id) }}">
+              <button class="btn-action edit">Edytuj</button>
+<!-- Skrypt własny (filtrowanie, inicjalizacja wykresów, countdown) -->
+            </a>
+
+            <form action="{{ url_for('remove_task_route', task_id=task.id) }}"
+                  method="POST" class="inline-form"
+                  onsubmit="return confirm('Na pewno usunąć zadanie {{task.id}}?');">
+              {{ csrf_token() }}
+              <button type="submit" class="btn-action delete">Usuń</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <p>© ADHD Manager</p>
+  </div>
+
+</div>
+
+<!-- Skrypt własny (filtrowanie, inicjalizacja wykresów, countdown) -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+  const priorityData = {
+    wysoki: {{ priority_counts['wysoki'] }},
+    sredni: {{ priority_counts['sredni'] }},
+    niski: {{ priority_counts['niski'] }}
+  };
+</script>
+</body>
+</html>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
 </body>
 </html>

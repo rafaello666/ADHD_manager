@@ -1,5 +1,4 @@
 # top_task_tracker.py
-
 import json
 import os
 from datetime import datetime

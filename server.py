@@ -1,181 +1,167 @@
 # server.py
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+"""
+Główny moduł serwera Flask dla aplikacji ADHD Manager.
+"""
+
+import os
+import sys
 import time
-from tasks import get_all_tasks, save_task, complete_task, remove_task, _save_tasks_to_file
+import atexit
+from datetime import datetime, timedelta
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask_wtf import CSRFProtect
+from apscheduler.schedulers.background import BackgroundScheduler
+from dotenv import load_dotenv
+from flask_wtf.csrf import CSRFError
+
+# Import modułów aplikacji
+from tasks import get_all_tasks, save_task, remove_task, complete_task
 from calculations import calculate_priority
+from twilio_sms import send_sms
+from google_calendar_integration import get_upcoming_events
+from hrv_monitor import run_hrv_monitor
+
+# Załaduj zmienne środowiskowe z pliku .env
+load_dotenv()
 
 app = Flask(__name__)
+
+# Ustaw SECRET_KEY z pliku .env
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+# Inicjalizacja ochrony CSRF
+csrf = CSRFProtect(app)
+
+scheduler = BackgroundScheduler()
 
 @app.route("/")
 def home():
     tasks = get_all_tasks()
-    now = time.time()
 
-    # Przelicz priorytety i wyłącz timery, które upłynęły
-    for t in tasks:
-        prio = calculate_priority(t)
-        t["priority"] = prio
+    # Policz statystyki
+    total = len(tasks)
+    completed_count = sum(1 for t in tasks if t.get("completed"))
+    completion_ratio = 0
+    if total > 0:
+        completion_ratio = round((completed_count / total) * 100, 1)
 
-        if t.get("timer_running"):
-            end_ts = t.get("timer_end", 0)
-            if now >= end_ts:
-                t["timer_running"] = False
-                t["timer_end"] = None
-                save_task(t)
+    # Sortuj zadania według priorytetu malejąco
+    tasks.sort(key=lambda x: x.get("priority", 0), reverse=True)
 
-    tasks_sorted = sorted(tasks, key=lambda x: x["priority"], reverse=True)
-    total = len(tasks_sorted)
-    completed_count = sum(1 for x in tasks_sorted if x.get("completed"))
-    not_completed_count = total - completed_count
-    completion_ratio = (completed_count / total * 100) if total else 0
-
-    # Przekazujemy też czas serwera do synchronizacji w JS
-    server_now = time.time()
+    # Przygotuj dane do wykresów
+    priority_counts = {
+        'wysoki': sum(1 for t in tasks if t.get('priority', 0) > 7),
+        'sredni': sum(1 for t in tasks if 4 < t.get('priority', 0) <= 7),
+        'niski': sum(1 for t in tasks if t.get('priority', 0) <= 4),
+    }
 
     return render_template(
         "index.html",
-        tasks=tasks_sorted,
+        tasks=tasks,
         total_tasks=total,
         completed_tasks=completed_count,
-        not_completed=not_completed_count,
-        completion_ratio=round(completion_ratio, 1),
-        server_now=server_now
+        completion_ratio=completion_ratio,
+        priority_counts=priority_counts
     )
+
+@app.route("/add_task", methods=["POST"])
+def add_task():
+    title = request.form.get("title", "").strip()
+    deadline = request.form.get("deadline", "")
+    if not title:
+        return "Brak tytułu zadania", 400
+
+    new_id = f"task_{int(time.time())}"
+    new_task = {
+        "id": new_id,
+        "title": title,
+        "completed": False,
+        "deadline": deadline if deadline else None,
+        "priority": 0,
+    }
+    save_task(new_task)
+    return redirect(url_for("home"))
 
 @app.route("/tasks/<task_id>/complete", methods=["POST"])
 def complete_task_route(task_id):
-    """
-    Dla recurring -> ustawia completed=True
-    Dla jednorazowych -> remove_task
-    """
-    tasks = get_all_tasks()
-    task = next((x for x in tasks if x["id"] == task_id), None)
-    if not task:
-        return "Nie znaleziono zadania", 404
-
-    if task.get("recurring", False):
-        ok = complete_task(task_id)
-        if ok:
-            return redirect(url_for("home"))
-        else:
-            return "Błąd: nie da się odhaczyć", 404
-    else:
-        removed = remove_task(task_id)
-        if removed:
-            return redirect(url_for("home"))
-        else:
-            return "Błąd: nie znaleziono do usunięcia", 404
+    ok = complete_task(task_id)
+    if not ok:
+        return "Nie udało się ukończyć zadania", 404
+    return redirect(url_for("home"))
 
 @app.route("/tasks/<task_id>/remove", methods=["POST"])
 def remove_task_route(task_id):
-    tasks = get_all_tasks()
-    t = next((x for x in tasks if x["id"] == task_id), None)
-    if not t:
-        return "Nie znaleziono zadania", 404
-
     rem = remove_task(task_id)
-    if rem:
-        return redirect(url_for("home"))
-    else:
-        return "Błąd: nie znaleziono do usunięcia", 404
-
-@app.route("/tasks/<task_id>/edit", methods=["GET","POST"])
-def edit_task_route(task_id):
-    tasks = get_all_tasks()
-    task_to_edit = next((x for x in tasks if x["id"] == task_id), None)
-    if not task_to_edit:
-        return "Nie znaleziono zadania", 404
-
-    if request.method == "POST":
-        # Zmiana tytułu
-        task_to_edit["title"] = request.form.get("title", task_to_edit["title"])
-
-        # Zmiana est_time
-        et_str = request.form.get("estimated_time","")
-        if et_str:
-            try:
-                et_val = float(et_str)
-                task_to_edit["estimated_time"] = et_val
-            except ValueError:
-                pass
-
-        # Tagi
-        tags_str = request.form.get("tags","")
-        if tags_str:
-            task_to_edit["tags"] = tags_str
-
-        # Subtasks
-        subs_str = request.form.get("subtasks","").strip()
-        if subs_str:
-            st_list = [s.strip() for s in subs_str.split(",")]
-            task_to_edit["subtasks"] = st_list
-
-        save_task(task_to_edit)
-        return redirect(url_for("home"))
-    else:
-        # Uwaga: tu zmieniamy "edit_tasks.html" na "edit_task.html"
-        return render_template("edit_task.html", task=task_to_edit)
-
-@app.route("/tasks/archive_completed", methods=["POST"])
-def archive_completed():
-    tasks = get_all_tasks()
-    new_tasks = [x for x in tasks if not x.get("completed")]
-    _save_tasks_to_file(new_tasks)
+    if not rem:
+        return "Nie znaleziono zadania do usunięcia", 404
     return redirect(url_for("home"))
 
-@app.route("/tasks/search", methods=["GET"])
-def search_tasks():
-    query = request.args.get("q","").lower()
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('csrf_error.html', reason=e.description), 400
+
+def remind_tasks():
     tasks = get_all_tasks()
-    filtered = []
-    for t in tasks:
-        title = t["title"].lower() if t["title"] else ""
-        tags = t.get("tags","").lower()
-        if query in title or (query and query in tags):
-            filtered.append(t)
-    return jsonify(filtered)
+    open_tasks = [x for x in tasks if not x.get("completed")]
 
-##########################
-# TIMERY (GLOBALNE)
-##########################
-@app.route("/tasks/<task_id>/start_timer", methods=["POST"])
-def start_timer_route(task_id):
-    tasks = get_all_tasks()
-    task = next((x for x in tasks if x["id"] == task_id), None)
-    if not task:
-        return "Nie znaleziono zadania", 404
+    for x in open_tasks:
+        prio = calculate_priority(x)
+        x["priority"] = prio
+        save_task(x)
 
-    # Wyłączamy timery w innych zadaniach, aby w danej chwili tylko jeden był aktywny
-    for t in tasks:
-        if t["id"] != task_id and t.get("timer_running"):
-            t["timer_running"] = False
-            t["timer_end"] = None
-            save_task(t)
+    if not open_tasks:
+        print("[REMIND] Brak otwartych zadań.")
+        return
 
-    est = float(task.get("estimated_time", 0))
-    if est <= 0:
-        # Brak sensownego czasu => zignoruj
-        return redirect(url_for("home"))
+    open_tasks.sort(key=lambda x: x["priority"], reverse=True)
+    top = open_tasks[0]
+    top_id = top["id"]
 
-    now_ts = time.time()
-    end_ts = now_ts + (est * 3600)
-    task["timer_running"] = True
-    task["timer_end"] = end_ts
-    save_task(task)
-    return redirect(url_for("home"))
+    print("[REMIND] Wysyłamy przypomnienie o top zadaniu.")
+    msg = f"Nowy TOP: {top['title']} (Priorytet={top['priority']:.2f})"
+    send_sms(msg)
 
-@app.route("/tasks/<task_id>/stop_timer", methods=["POST"])
-def stop_timer_route(task_id):
-    tasks = get_all_tasks()
-    task = next((x for x in tasks if x["id"] == task_id), None)
-    if not task:
-        return "Nie znaleziono zadania", 404
+def check_calendar_and_notify():
+    events = get_upcoming_events(minutes_ahead=30)
+    if not events:
+        print("[CALENDAR] Brak wydarzeń w ciągu 30 minut.")
+        return
+    for ev in events:
+        title = ev.get("summary", "Bez tytułu")
+        loc = ev.get("location", "Brak lokalizacji")
+        start_dt = ev.get("start")
+        if start_dt:
+            diff_min = compute_diff_minutes(start_dt)
+            msg = (
+                f"Uwaga! Za {diff_min} min: '{title}'. "
+                f"Lokalizacja: {loc}"
+            )
+            print("[CALENDAR] Wyślę SMS:", msg)
+            send_sms(msg)
+        else:
+            print("[CALENDAR] Brak informacji o czasie rozpoczęcia wydarzenia.")
 
-    task["timer_running"] = False
-    task["timer_end"] = None
-    save_task(task)
-    return redirect(url_for("home"))
+def compute_diff_minutes(start_dt: datetime) -> int:
+    now = datetime.now()
+    diff = start_dt - now
+    return int(diff.total_seconds() / 60)
+
+def start_scheduler():
+    scheduler.add_job(remind_tasks, "interval", minutes=15)
+    scheduler.add_job(check_calendar_and_notify, "interval", minutes=5)
+    scheduler.add_job(run_hrv_monitor, "interval", minutes=5)
+    # Dodaj inne zadania według potrzeb
+    scheduler.start()
+    print("[SCHEDULER] Scheduler wystartował.")
+
+@atexit.register
+def shutdown_scheduler():
+    if scheduler.running:
+        scheduler.shutdown()
+        print("[SCHEDULER] Scheduler został zatrzymany.")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Uruchom scheduler przed startem aplikacji
+    start_scheduler()
+    app.run(host="0.0.0.0", port=5000, debug=True)

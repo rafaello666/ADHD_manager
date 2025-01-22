@@ -1,0 +1,75 @@
+name: ADHD_Manager CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    # Uruchamiaj na Ubuntu, zrób matrix (Python 3.9 i 3.10)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.9", "3.10" ]
+
+    env:
+      # Przypisujemy sekrety GitHuba do ENV:
+      TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+      TWILIO_TO_NUMBER: ${{ secrets.TWILIO_TO_NUMBER }}
+      GOOGLE_CALENDAR_API: ${{ secrets.GOOGLE_CALENDAR_API }}
+      CLIENT_SECRET_ADHDMANAGER_GOOGLE_CALENDAR_API: ${{ secrets.CLIENT_SECRET_ADHDMANAGER_GOOGLE_CALENDAR_API }}
+      ID_OAUTH_GOOGLE_CALENDAR_API: ${{ secrets.ID_OAUTH_GOOGLE_CALENDAR_API }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint Code
+        run: |
+          # Przykład: flake8
+          pip install flake8
+          flake8 . --exclude=venv
+
+      - name: Run Tests
+        run: |
+          # np. pytest
+          pip install pytest
+          pytest tests/ --maxfail=1 --disable-warnings -q
+
+      - name: (Optional) Dry-run ADHD Manager
+        run: |
+          echo "Starting server in test mode..."
+          python server.py --dry-run
+
+  # Przykład drugiego joba, np. deploy do Heroku / AWS
+  deploy:
+    needs: build-and-test  # musi przejść testy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # Tylko z main
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Heroku
+        run: |
+          echo "Wykonaj komendy wdrożenia do Heroku/AWS/GCP"
+          # np. heroku login, heroku container:push ...
+      - name: Start Server
+        run: |
+          echo "Starting the server..."
+          # Dodaj komendy do uruchomienia serwera, np. heroku ps:scale web=1

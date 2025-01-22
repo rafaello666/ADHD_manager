@@ -1,3 +1,6 @@
+/* style.css */
+
+/* Zmienna dla siatki */
 :root {
   --container-width: 1200px;
   --columns: 12;
@@ -11,6 +14,7 @@
   box-sizing: border-box;
 }
 
+/* Podstawowe style */
 body {
   background: #000;
   color: #ddd;
@@ -31,8 +35,8 @@ body {
   margin: auto;
 }
 .big-circle {
-  width: 200px; 
-  height: 200px; 
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   margin: 0 auto 20px auto;
   background: conic-gradient(
@@ -48,13 +52,13 @@ body {
   justify-content: center;
 }
 .circle-center {
-  width: 80%; 
+  width: 80%;
   height: 80%;
   background: #111;
   border-radius: 50%;
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
 }
 .circle-value {
@@ -199,15 +203,9 @@ body {
 .btn-action.done {
   background: #1cc36b;
 }
-.btn-action.done:hover {
-  background: #39e28f;
-}
 .btn-action.edit {
   background: #ff8a00;
   color: #fff;
-}
-.btn-action.edit:hover {
-  background: #ffa53c;
 }
 .btn-action.delete {
   background-color: #c44141;
@@ -256,7 +254,7 @@ body {
   animation: blinkAlarm 1s infinite;
 }
 
-/* Light mode */
+/* Motyw jasny */
 body.light-mode {
   background: #f4f4f4;
   color: #333;
@@ -290,4 +288,23 @@ body.light-mode .task-table th,
 body.light-mode .task-table td {
   border-color: #ccc;
   color: #333;
+}
+
+/* Dodatkowe klasy */
+.input-padding {
+  padding: 6px;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap; /* added line */
+  border: 0;
 }

@@ -1,0 +1,236 @@
+/* style.css */
+
+/* Zmienna dla siatki */
+:root {
+  --container-width: 1200px;
+  --columns: 12;
+  --gutter: 24px;
+}
+
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Podstawowe style */
+body {
+  background: #000;
+  color: #ddd;
+  font-family: "Montserrat", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* HERO */
+.hero-section {
+  width: 100%;
+  background: linear-gradient(135deg, #000 0%, #0b0b2b 100%);
+  padding: 40px 20px;
+  text-align: center;
+}
+.hero-section h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.hero-section p {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-bottom: 1.5rem;
+}
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+.hero-stat-box {
+  background-color: #fff;
+  color: #333;
+  padding: 1rem;
+  border-radius: 8px;
+  min-width: 180px;
+  text-align: center;
+}
+.hero-stat-box h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.hero-stat-box p {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* Container siatka */
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin: 40px auto;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), 1fr);
+  column-gap: var(--gutter);
+  row-gap: 32px;
+  padding: 0 20px;
+}
+.container .row {
+  grid-column: 1 / -1;
+}
+
+/* Inne style */
+.priority-high {
+  color: #ff4f4f; /* mocna czerwień */
+  font-weight: 700;
+}
+.priority-medium {
+  color: #ffc107; /* żółty */
+  font-weight: 600;
+}
+.priority-low {
+  color: #20c997; /* zielony */
+  font-weight: 600;
+}
+
+/* Alarm row – miganie */
+@keyframes blinkAlarm {
+  0%, 50% {
+    background-color: red;
+    color: #000;
+  }
+  25%, 75% {
+    background-color: #500;
+    color: #fff;
+  }
+  100% {
+    background-color: red;
+    color: #000;
+  }
+}
+.alarm-row {
+  animation: blinkAlarm 1s infinite;
+}
+
+/* Motyw jasny */
+body.light-mode {
+  background: #f4f4f4;
+  color: #333;
+}
+body.light-mode .hero-section {
+  background: linear-gradient(135deg, #fff 0%, #f0f0ff 100%);
+}
+body.light-mode .hero-stat-box {
+  background-color: #f8f8f8;
+  color: #333;
+}
+
+/* Dodatkowe klasy */
+.input-padding {
+  padding: 6px;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap; /* added line */
+  border: 0;
+}
+
+/* Ensure chart containers have defined height and visibility */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for canvas to ensure it fills the container */
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.countdown-timer-card {
+  margin-bottom: 2rem;
+}
+
+#countdownDisplay {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Stopka */
+footer {
+  background-color: #222;
+  color: #ccc;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+
+/* Style dla tabeli zadań */
+.task-row.completed td {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #444;
+  color: #fff;
+}
+
+/* Przyciski */
+.btn-action {
+  background: #444;
+  color: #fff;
+  border: none;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-right: 6px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+}
+.btn-action:hover:not(:disabled) {
+  background: #5c2eff;
+  transform: scale(1.03);
+}
+.btn-action:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+.btn-action.done {
+  background: #1cc36b;
+}
+.btn-action.edit {
+  background: #ff8a00;
+  color: #fff;
+}
+.btn-action.delete {
+  background-color: #c44141;
+}
+.btn-action.play {
+  background: #0064ce;
+}
+.btn-action.stop {
+  background: #ff1cde;
+}

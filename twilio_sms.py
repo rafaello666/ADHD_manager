@@ -1,24 +1,37 @@
-import os
-from twilio.rest import Client
-from dotenv import load_dotenv
-load_dotenv()  # wczyta zmienne z pliku .env
+# twilio_sms.py
 
-# Pobieramy zmienne środowiskowe – tam ma być SID, TOKEN itd.
-account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-from_number = os.getenv("TWILIO_FROM_NUMBER")  # np. numer przydzielony przez Twilio
-to_number = os.getenv("TWILIO_TO_NUMBER")      # Twój docelowy numer
+"""
+Moduł odpowiedzialny za wysyłanie SMS-ów za pomocą Twilio.
+"""
+
+import os
+from dotenv import load_dotenv
+from twilio.rest import Client
+
+load_dotenv()
+
+TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_FROM = os.getenv("TWILIO_FROM_NUMBER")
+TWILIO_TO = os.getenv("TWILIO_TO_NUMBER")
 
 def send_sms(message: str):
-    if not account_sid or not auth_token:
-        print("[ERROR] Brak danych uwierzytelniających Twilio (SID / TOKEN).")
-        return None
+    """
+    Wysyła SMS z podaną treścią.
 
-    client = Client(account_sid, auth_token)
-    msg = client.messages.create(
-        body=message,
-        from_=from_number,
-        to=to_number
-    )
-    print("[SMS] Wysłano wiadomość:", msg.sid)
-    return msg.sid
+    Args:
+        message: Treść wiadomości SMS.
+    """
+    if not TWILIO_SID or not TWILIO_TOKEN:
+        print("[TWILIO] Brak SID/TOKEN w zmiennych środowiskowych, nie wysyłam SMS.")
+        return
+    client = Client(TWILIO_SID, TWILIO_TOKEN)
+    try:
+        msg = client.messages.create(
+            body=message,
+            from_=TWILIO_FROM,
+            to=TWILIO_TO
+        )
+        print("[SMS] Wysłano wiadomość:", msg.sid)
+    except Exception as e:
+        print(f"[SMS] Błąd podczas wysyłania wiadomości: {e}")

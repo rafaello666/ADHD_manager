@@ -1,0 +1,11 @@
+{
+  "pilne_dla_przetrwania": 0.15,
+  "deadline_strictness": 0.10,
+  "konsekwencje_opoznienia": 0.10,
+  "dlugoterminowe_znaczenie": 0.15,
+  "czas_realizacji": 0.05,
+  "potrzebne_zasoby": 0.05,
+  "cel_finanse": 0.15,
+  "cel_dziewczyna": 0.15,
+  "monika_impact": 0.10
+}

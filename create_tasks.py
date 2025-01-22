@@ -96,7 +96,7 @@ def modify_task(task):
         else:
             task["recurrence_pattern"] = None
 
-    # 3. deadline_strictness
+    # 3. deadline_strictness    
     old_deadline = task.get("deadline_strictness", None)
     new_deadline = ask_integer_or_none("deadline_strictness (1–10, 'NIE WIEM' lub Enter)", default=old_deadline)
     task["deadline_strictness"] = new_deadline

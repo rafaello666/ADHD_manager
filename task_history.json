@@ -1,0 +1,52 @@
+[
+  {
+    "id": "hist_1",
+    "task_id": "task_16",
+    "completion_time": "2025-01-21T13:19:45.991363",
+    "time_spent": 0,
+    "system_priority": 8.518518518518519,
+    "actual_deadline_gap": null,
+    "user_importance": 5,
+    "was_interrupted": false
+  },
+  {
+    "id": "hist_2",
+    "task_id": "task_2",
+    "completion_time": "2025-01-21T13:30:31.835551",
+    "time_spent": 0,
+    "system_priority": 6.904761904761905,
+    "actual_deadline_gap": null,
+    "user_importance": 3,
+    "was_interrupted": false
+  },
+  {
+    "id": "hist_3",
+    "task_id": "task_1",
+    "completion_time": "2025-01-21T13:30:42.966897",
+    "time_spent": 0,
+    "system_priority": 5.987654320987653,
+    "actual_deadline_gap": -231749,
+    "user_importance": 5,
+    "was_interrupted": false
+  },
+  {
+    "id": "hist_4",
+    "task_id": "task_26",
+    "completion_time": "2025-01-21T13:31:07.536478",
+    "time_spent": 0,
+    "system_priority": 5.291005291005291,
+    "actual_deadline_gap": null,
+    "user_importance": 3,
+    "was_interrupted": false
+  },
+  {
+    "id": "hist_5",
+    "task_id": "task_21",
+    "completion_time": "2025-01-21T13:31:17.338277",
+    "time_spent": 0,
+    "system_priority": 3.703703703703703,
+    "actual_deadline_gap": null,
+    "user_importance": 3,
+    "was_interrupted": false
+  }
+]
