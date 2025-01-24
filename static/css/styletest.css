@@ -1,0 +1,202 @@
+/* RESET CSS */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* ZMIENNE */
+  :root {
+    --navy-color: #061639;
+    --primary-color: #0d6efd;   /* ciemnoniebieski -> gradient */
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    --font-family: 'Montserrat', sans-serif;
+  }
+  
+  /* PODSTAWY */
+  body {
+    font-family: var(--font-family);
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+  }
+  
+  /* NAVBAR */
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  .nav-link {
+    font-size: 0.95rem;
+  }
+  
+  /* HERO SECTION */
+  .hero-section {
+    position: relative;
+    background: linear-gradient(135deg, #061639 0%, #0d6efd 100%);
+    color: #fff;
+    min-height: 300px; /* Wyższa sekcja */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* by pseudo-elementy z brokatem nie wychodziły */
+    text-align: center;
+  }
+  
+  .wave {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  
+  /* BROKAT – pseudo-element */
+  .hero-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300%;
+    height: 300%;
+    pointer-events: none;
+    background:
+      radial-gradient(rgba(255,255,255,0.6) 2px, transparent 3px) repeat,
+      radial-gradient(rgba(255,255,255,0.4) 1px, transparent 2px) repeat;
+    background-size: 30px 30px, 15px 15px;
+    background-position: 0 0, 0 0;
+    animation: sparkleMove 8s linear infinite;
+  }
+  
+  /* Animacja pseudo-elementu – przesunięcie gwiazdek dla wrażenia migotania */
+  @keyframes sparkleMove {
+    0% { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(-10%, -10%, 0); }
+  }
+  
+  /* HERO BOXY */
+  .hero-stat-box {
+    background-color: rgba(255, 255, 255, 0.85);
+    color: var(--dark-color);
+    padding: 25px;
+    border-radius: 10px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .hero-stat-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  .hero-stat-box h4 {
+    font-size: 1.25rem;
+    margin-bottom: 15px;
+  }
+  .hero-stat-box p {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  
+  /* KARTY */
+  .card {
+    border-radius: 10px;
+  }
+  .card-header {
+    font-weight: 600;
+  }
+  .card-body {
+    padding: 20px;
+  }
+  
+  /* TABELA ZADAŃ */
+  #taskTable th,
+  #taskTable td {
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+  }
+  #taskTable tbody tr:hover {
+    background-color: #f1f3f5;
+  }
+  .task-row.completed {
+    background-color: #d4edda !important;
+    color: #555;
+  }
+  
+  /* COUNTDOWN */
+  .countdownDisplay {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 15px 0;
+    color: var(--dark-color);
+  }
+  
+  /* STATYSTYKI – WYKRESY */
+  .chart-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* PRZYCISKI :hover */
+  .btn-success:hover {
+    background-color: #218838;
+  }
+  .btn-danger:hover {
+    background-color: #c82333;
+  }
+  .btn-primary:hover {
+    background-color: #0a58ca;
+  }
+  
+  /* STOPKA */
+  footer {
+    background-color: var(--dark-color);
+    color: #fff;
+  }
+  
+  /* RESPONSYWNOŚĆ */
+  @media (max-width: 992px) {
+    .hero-section h1 {
+      font-size: 2.2rem;
+    }
+    .hero-stat-box {
+      padding: 20px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hero-section {
+      min-height: 350px;
+    }
+    .hero-section h1 {
+      font-size: 1.9rem;
+    }
+    .hero-stat-box {
+      padding: 15px;
+    }
+    .chart-container {
+      height: 300px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .hero-section h1 {
+      font-size: 1.6rem;
+    }
+    .hero-section p,
+    .hero-stat-box p {
+      font-size: 1rem;
+    }
+    .chart-container {
+      height: 250px;
+    }
+  }
+  

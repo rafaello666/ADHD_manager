@@ -20,8 +20,10 @@ def check_calendar_and_notify():
         print("[CALENDAR] Brak wydarzeń w ciągu 30 minut.")
         return
     for ev in events:
+        # ...existing code...
         title = ev.get("summary", "Bez tytułu")
         loc = ev.get("location", "Brak lokalizacji")
+# ...existing code...
         start_dt = ev.get("start")
         if start_dt:
             diff_min = compute_diff_minutes(start_dt)

@@ -1,30 +1,40 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // Inicjalizacja filtrów
-  const searchInput = document.getElementById("searchInput");
-  searchInput.addEventListener("input", applyFilter);
+/***************************************************
+ * main.js
+ * Obsługa timera (start/stop), filtracji zadań
+ * oraz inicjalizacja wykresów Chart.js.
+ **************************************************/
 
-  // Inicjalizacja wykresów
+document.addEventListener("DOMContentLoaded", () => {
+  // Filtracja tabeli zadań
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", applyFilter);
+  }
+
+  // Inicjalizacja wykresów (Chart.js)
   initializeCharts();
 
-  // Inicjalizacja licznika
+  // Licznik Start/Stop
   initializeCountdownTimer();
 });
 
 /**
- * Filtruje tabelę zadań na podstawie wprowadzonego zapytania
+ * Filtruje tabelę zadań na podstawie wpisanego tekstu.
  */
 function applyFilter() {
   const query = document.getElementById("searchInput").value.trim().toLowerCase();
   const rows = document.querySelectorAll("#taskTable tbody tr");
+
   rows.forEach((row) => {
     const title = row.children[1].innerText.toLowerCase();
-    const matches = title.includes(query);
-    row.style.display = matches || query === "" ? "" : "none";
+    row.style.display = (title.includes(query) || query === "") ? "" : "none";
   });
 }
 
 /**
- * Inicjalizuje wykresy za pomocą Chart.js
+ * Inicjalizuje wykresy Chart.js.
+ *  - Wykres priorytetów (Pie Chart)
+ *  - Wykres HR/HRV (Line Chart)
  */
 function initializeCharts() {
   // Wykres Priorytetów
@@ -37,11 +47,15 @@ function initializeCharts() {
         labels: ["Wysoki", "Średni", "Niski"],
         datasets: [
           {
-            data: [priorityData.wysoki, priorityData.sredni, priorityData.niski],
+            data: [
+              priorityData.wysoki || 0,
+              priorityData.sredni || 0,
+              priorityData.niski || 0
+            ],
             backgroundColor: [
-              "rgba(220,53,69,0.7)",   // Wysoki
-              "rgba(255,193,7,0.7)",   // Średni
-              "rgba(25,135,84,0.7)",   // Niski
+              "rgba(220,53,69,0.7)",   // Wysoki (czerwony)
+              "rgba(255,193,7,0.7)",  // Średni (żółty)
+              "rgba(25,135,84,0.7)",  // Niski  (zielony)
             ],
             borderColor: [
               "rgba(220,53,69,1)",
@@ -57,9 +71,6 @@ function initializeCharts() {
         plugins: {
           legend: {
             position: "bottom",
-          },
-          title: {
-            display: false,
           },
         },
       },
@@ -106,8 +117,8 @@ function initializeCharts() {
               text: "HR (bpm)",
             },
             ticks: {
-              beginAtZero: true,
-            },
+              beginAtZero: true
+            }
           },
           y2: {
             type: "linear",
@@ -120,8 +131,8 @@ function initializeCharts() {
               drawOnChartArea: false,
             },
             ticks: {
-              beginAtZero: true,
-            },
+              beginAtZero: true
+            }
           },
         },
         plugins: {
@@ -135,34 +146,84 @@ function initializeCharts() {
 }
 
 /**
- * Inicjalizuje licznik odliczający do zakończenia zadania lub sesji
+ * Inicjalizuje licznik (countdown) z przyciskami Start/Stop.
+ * Możesz zmienić zachowanie, np. restartować licznik itp.
  */
 function initializeCountdownTimer() {
   const countdownDisplay = document.getElementById("countdownDisplay");
-  if (!countdownDisplay) return;
+  const startBtn = document.getElementById("startTimerBtn");
+  const stopBtn = document.getElementById("stopTimerBtn");
 
-  // Przykładowy czas zakończenia (w przyszłości)
-  const endTime = new Date();
-  endTime.setMinutes(endTime.getMinutes() + 30); // 30 minut od teraz
+  // Sprawdzamy, czy elementy istnieją na stronie
+  if (!countdownDisplay || !startBtn || !stopBtn) return;
 
+  // Domyślnie 30 minut
+  const initialMinutes = 30;
+  let endTime = null;
+  let paused = true;
+  let countdownInterval = null;
+
+  /**
+   * Aktualizuje widok (countdownDisplay).
+   * Jeśli timer dojdzie do zera, zatrzymuje się i wyświetla 00:00:00.
+   */
   function updateCountdown() {
+    if (paused || !endTime) return;
+
     const now = new Date();
     const distance = endTime - now;
 
-    if (distance < 0) {
+    // Gdy czas się skończy
+    if (distance <= 0) {
       clearInterval(countdownInterval);
+      countdownInterval = null;
       countdownDisplay.textContent = "00:00:00";
       countdownDisplay.classList.add("text-danger", "fw-bold");
+      stopBtn.disabled = true;
+      startBtn.disabled = true;
       return;
     }
 
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    // Obliczamy hh:mm:ss
+    const hours = Math.floor(distance / 3600000);
+    const minutes = Math.floor((distance % 3600000) / 60000);
+    const seconds = Math.floor((distance % 60000) / 1000);
 
-    countdownDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    countdownDisplay.textContent =
+      `${String(hours).padStart(2, "0")}:` +
+      `${String(minutes).padStart(2, "0")}:` +
+      `${String(seconds).padStart(2, "0")}`;
   }
 
-  updateCountdown(); // Początkowe wywołanie
-  const countdownInterval = setInterval(updateCountdown, 1000);
+  // START
+  startBtn.addEventListener("click", () => {
+    if (paused) {
+      // Jeśli pierwszy raz startujemy (endTime pusty), ustawiamy go
+      if (!endTime) {
+        const now = new Date();
+        endTime = new Date(now.getTime() + initialMinutes * 60 * 1000);
+      }
+      paused = false;
+      stopBtn.disabled = false;
+      startBtn.disabled = true;
+      countdownDisplay.classList.remove("text-danger", "fw-bold");
+
+      // Uruchamiamy update co 1 sek, jeśli nie mamy jeszcze intervala
+      if (!countdownInterval) {
+        countdownInterval = setInterval(updateCountdown, 1000);
+      }
+    }
+  });
+
+  // STOP/PAUZA
+  stopBtn.addEventListener("click", () => {
+    if (!paused) {
+      paused = true;
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+    }
+  });
+
+  // Na starcie wyświetlamy "00:30:00"
+  countdownDisplay.textContent = `00:${String(initialMinutes).padStart(2, "0")}:00`;
 }
