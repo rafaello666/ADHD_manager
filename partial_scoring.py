@@ -1,4 +1,3 @@
-# partial_scoring.py
 import sys
 from tasks import get_all_tasks, save_task
 from calculations import load_goals_config
@@ -24,17 +23,16 @@ def run_partial_scoring():
         for k in interesting_keys:
             if z.get(k) is None:
                 prompt = f"[?] Zadanie '{z['title']}' - podaj {k} (1–10, Enter=ignoruj): "
-                ans = input(prompt)
-                ans = ans.strip()
+                ans = input(prompt).strip()
                 if ans.isdigit():
                     val = int(ans)
-                    if 1<=val<=10:
+                    if 1 <= val <= 10:
                         z[k] = val
                         updated = True
                     else:
-                        print("[!] Niepoprawna liczba, pomijam")
+                        print("[!] Niepoprawna liczba, pomijam.")
                 else:
-                    print("[i] Pominięto brak wpisu")
+                    print("[i] Brak wpisu - pomijam.")
 
         if updated:
             save_task(z)

@@ -1,57 +1,57 @@
 # tasks.py
+
 import json
 import os
 
-DATA_FILE = "tasks.json"
+TASKS_FILE = "tasks.json"
 
-def _load_tasks_from_file():
-    if not os.path.exists(DATA_FILE):
+def _load_tasks():
+    if not os.path.exists(TASKS_FILE):
         return []
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+    with open(TASKS_FILE, "r", encoding="utf-8") as f:
+        try:
             return json.load(f)
-    except:
-        print(f"[ERROR] Wczytywanie {DATA_FILE}.")
-        return []
+        except:
+            return []
 
-def _save_tasks_to_file(tasks_list):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(tasks_list, f, indent=2, ensure_ascii=False)
+def _save_tasks(tasks_list):
+    with open(TASKS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tasks_list, f, ensure_ascii=False, indent=2)
 
 def get_all_tasks():
-    """ Zwraca listę wszystkich zadań (dict) z pliku JSON. """
-    return _load_tasks_from_file()
+    return _load_tasks()
 
-def save_task(updated_task):
-    """
-    Nadpisuje (lub dodaje) zadanie w pliku. 
-    Jeżeli nie ma zadania o danym 'id', dodaje nowe.
-    """
-    tasks = _load_tasks_from_file()
-    for i, t in enumerate(tasks):
-        if t["id"] == updated_task["id"]:
-            tasks[i] = updated_task
-            break
+def save_task(new_task):
+    tasks = _load_tasks()
+    existing = next((t for t in tasks if t["id"] == new_task["id"]), None)
+    if existing:
+        existing.update(new_task)
     else:
-        tasks.append(updated_task)
-    _save_tasks_to_file(tasks)
+        tasks.append(new_task)
+    _save_tasks(tasks)
 
-def complete_task(task_id: str) -> bool:
-    """ Ustawia completed=True w zadaniu o danym ID. Zwraca True, jeśli się uda. """
-    tasks = _load_tasks_from_file()
-    for i, t in enumerate(tasks):
+def remove_task(task_id):
+    tasks = _load_tasks()
+    new_tasks = [t for t in tasks if t["id"] != task_id]
+    if len(new_tasks) == len(tasks):
+        return False
+    _save_tasks(new_tasks)
+    return True
+
+def complete_task(task_id):
+    tasks = _load_tasks()
+    for t in tasks:
         if t["id"] == task_id:
             t["completed"] = True
-            _save_tasks_to_file(tasks)
+            _save_tasks(tasks)
             return True
     return False
 
-def remove_task(task_id: str) -> bool:
-    """ Usuwa zadanie z listy, zwraca True, jeśli faktycznie coś usunięto. """
-    tasks = _load_tasks_from_file()
-    init_len = len(tasks)
-    tasks = [x for x in tasks if x["id"] != task_id]
-    if len(tasks) < init_len:
-        _save_tasks_to_file(tasks)
-        return True
+def reopen_task(task_id):
+    tasks = _load_tasks()
+    for t in tasks:
+        if t["id"] == task_id:
+            t["completed"] = False
+            _save_tasks(tasks)
+            return True
     return False

@@ -1,216 +1,163 @@
-# main.py
+import os
+import json
+from flask import Flask, request, jsonify, session, redirect, url_for
+from dotenv import load_dotenv
 
-"""
-Główny plik uruchamiający aplikację ADHD Manager.
-Obsługuje interaktywny scoring zadań, przypomnienia oraz uruchamia serwer.
-"""
+from taskmanager import init_db, add_task, mark_task_done, get_all_tasks, delete_task
+from google_sync import get_google_flow, get_google_credentials, save_google_credentials, create_google_calendar_event, delete_google_calendar_event, sync_google_keep
 
-import argparse
+# Importy dla powiadomień
+from twilio.rest import Client
+from pywebpush import webpush, WebPushException
 
-from apscheduler.schedulers.background import BackgroundScheduler
+load_dotenv()
 
-from tasks import get_all_tasks, save_task, complete_task, remove_task
-from calculations import calculate_priority
-from scales import get_scale_description
-from twilio_sms import send_sms
-from top_task_tracker import load_top_info, save_top_info, reset_top_info
-from hrv_monitor import run_hrv_monitor
+app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'supersecretkey')
 
-# Inicjalizacja APSchedulera
-scheduler = None
+# Inicjalizacja bazy danych
+init_db()
 
-def ask_question(task_title: str, question_key: str, current_val=None):
-    """
-    Zadaje pytanie użytkownikowi w celu oceny zadania.
+# Konfiguracja Twilio
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
 
-    Args:
-        task_title: Tytuł zadania.
-        question_key: Klucz pytania.
-        current_val: Aktualna wartość (opcjonalnie).
+twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-    Zwraca:
-        Wartość oceny lub specjalne komendy ('BACK' lub None).
-    """
-    print(f"\nZadanie: {task_title}, klucz={question_key} (1–10 lub 'NIE WIEM','BACK').")
-    if current_val is not None:
-        print(f"[Aktualnie={current_val}]")
-    print(get_scale_description(question_key))
-    while True:
-        ans = input("Twoja ocena: ").strip().upper()
-        if ans == "NIE WIEM":
-            return None
-        elif ans == "BACK":
-            return "BACK"
-        else:
-            try:
-                val = int(ans)
-                if 1 <= val <= 10:
-                    return val
-                else:
-                    print("Podaj liczbę 1–10 lub 'NIE WIEM','BACK'.")
-            except ValueError:
-                print("Nieprawidłowe. Spróbuj.")
+def send_sms_via_twilio(to_number: str, message_body: str) -> str:
+    message = twilio_client.messages.create(
+        body=message_body,
+        from_=TWILIO_NUMBER,
+        to=to_number
+    )
+    return message.sid
 
-def score_tasks_interactively():
-    """
-    Interfejs do interaktywnego oceniania zadań przez użytkownika.
-    """
-    print("[SCORE] Interaktywny scoring (z możliwością cofania).")
-    keys = [
-        "pilne_dla_przetrwania", "dlugoterminowe_znaczenie", "konsekwencje_opoznienia",
-        "czas_realizacji", "potrzebne_zasoby", "deadline_strictness",
-        "wplyw_na_monike_1h", "wplyw_na_monike_3h", "wplyw_na_monike_12h", "wplyw_na_monike_48h"
-    ]
+# Konfiguracja Web Push (VAPID)
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
+VAPID_CLAIMS = {"sub": "mailto:[email protected]"}  # // KOMENTARZ: Uzupełnij swój kontakt
+
+# Przechowywanie subskrypcji (dla demo – w produkcji użyj bazy danych)
+subscriptions = []
+
+# Endpointy API
+
+@app.route('/add_task', methods=['POST'])
+def api_add_task():
+    data = request.json
+    title = data.get('title')
+    deadline = data.get('deadline')
+    is_cyclic = data.get('is_cyclic', False)
+    
+    if not title:
+        return jsonify({"error": "Title is required"}), 400
+
+    # Synchronizacja z Google Calendar, jeśli użytkownik jest zalogowany i podano deadline
+    creds = get_google_credentials()
+    google_event_id = None
+    if creds and deadline:
+        google_event_id = create_google_calendar_event(creds, {'title': title, 'deadline': deadline})
+
+    task_id = add_task(title, deadline, is_cyclic, google_event_id)
+    return jsonify({"status": "ok", "task_id": task_id})
+
+@app.route('/mark_done', methods=['POST'])
+def api_mark_done():
+    data = request.json
+    task_id = data.get('task_id')
+    if not task_id:
+        return jsonify({"error": "task_id is required"}), 400
+
+    success = mark_task_done(task_id)
+    return jsonify({"status": "ok"}) if success else (jsonify({"error": "Task not found"}), 404)
+
+@app.route('/get_tasks', methods=['GET'])
+def api_get_tasks():
     tasks = get_all_tasks()
-    for t in tasks:
-        if t.get("completed"):
-            continue
-        title = t["title"]
-        print(f"\n=== Zadanie: {title} (ID={t['id']}) ===")
-        local = {}
-        for k in keys:
-            local[k] = t.get(k)
-        idx = 0
-        while idx < len(keys):
-            k = keys[idx]
-            ans = ask_question(title, k, local[k])
-            if ans == "BACK":
-                if idx > 0:
-                    idx -= 1
-                else:
-                    print("[INFO] Nie można cofnąć się bardziej.")
-            else:
-                local[k] = ans
-                idx += 1
-        for k in keys:
-            t[k] = local[k]
-        save_task(t)
-    print("[SCORE] Zakończono scoring.")
+    return jsonify(tasks)
 
-def remind_tasks():
-    """
-    Sprawdza otwarte zadania, przelicza priorytety,
-    wybiera top i jeśli się zmienił – wysyła SMS.
-    """
+@app.route('/delete_task', methods=['POST'])
+def api_delete_task():
+    data = request.json
+    task_id = data.get('task_id')
+    if not task_id:
+        return jsonify({"error": "task_id is required"}), 400
+
+    # Usuwanie wydarzenia z Google Calendar, jeśli istnieje
     tasks = get_all_tasks()
-    open_tasks = [x for x in tasks if not x.get("completed")]
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if task and task.get('google_event_id'):
+        creds = get_google_credentials()
+        if creds:
+            delete_google_calendar_event(creds, task['google_event_id'])
+    
+    success = delete_task(task_id)
+    return jsonify({"status": "ok"}) if success else (jsonify({"error": "Task not found"}), 404)
 
-    for x in open_tasks:
-        prio = calculate_priority(x)
-        x["priority"] = prio
-        save_task(x)
+# Powiadomienia SMS
+@app.route('/notify/sms', methods=['POST'])
+def notify_sms():
+    data = request.json
+    phone = data.get('phone')
+    content = data.get('message')
+    if not phone or not content:
+        return jsonify({"error": "Brak numeru telefonu lub treści wiadomości"}), 400
+    try:
+        sid = send_sms_via_twilio(phone, content)
+        return jsonify({"status": "SMS sent", "sid": sid}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    if not open_tasks:
-        print("[REMIND] Brak otwartych zadań.")
-        return
+# Powiadomienia Web Push
+@app.route('/subscribe', methods=['POST'])
+def subscribe_push():
+    subscription_info = request.get_json()
+    if not subscription_info:
+        return jsonify({"error": "Brak danych subskrypcji"}), 400
+    subscriptions.append(subscription_info)
+    return jsonify({"status": "subscribed"}), 201
 
-    open_tasks.sort(key=lambda x: x["priority"], reverse=True)
-    top = open_tasks[0]
-    top_id = top["id"]
-    info = load_top_info()
-    prev_id = info.get("previous_top_id")
+@app.route('/notify/push', methods=['POST'])
+def notify_push():
+    data = request.get_json() or {}
+    message = data.get("message", "Powiadomienie z ADHD Manager")
+    if not subscriptions:
+        return jsonify({"error": "Brak subskrybentów"}), 400
 
-    if top_id != prev_id:
-        print("[TOP TASK] Zmienił się top, wysyłamy SMS.")
-        reset_top_info(top_id)
-        msg = f"Nowy TOP: {top['title']} (Priorytet={top['priority']:.2f})"
-        send_sms(msg)
-    else:
-        print("[REMIND] Top zadanie bez zmian.")
+    errors = []
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info=sub,
+                data=message,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=VAPID_CLAIMS
+            )
+        except WebPushException as ex:
+            errors.append(repr(ex))
+    status = "sent" if not errors else "partial failure"
+    return jsonify({"status": status, "errors": errors}), 200
 
-def reset_daily_recurring_tasks():
-    """
-    Codzienny reset zadań cyklicznych (nawyków) – ustawia completed=False.
-    """
-    print("[RESET] Resetowanie zadań daily (ustawienie completed=False).")
-    tasks = get_all_tasks()
-    changed = False
-    for t in tasks:
-        if t.get("recurring") and t.get("recurrence_pattern") == "daily":
-            t["completed"] = False
-            t["priority"] = 0
-            save_task(t)
-            changed = True
-    if changed:
-        print("[RESET] Zresetowano daily tasks.")
+# Google OAuth2 – logowanie i synchronizacja
+@app.route('/authorize')
+def authorize():
+    flow = get_google_flow()
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true'
+    )
+    session['state'] = state
+    return redirect(authorization_url)
 
-def complete_task_cli(task_id: str):
-    """
-    Odhacza zadanie jako ukończone lub usuwa je (jeśli nie jest cykliczne).
-
-    Args:
-        task_id: ID zadania.
-    """
-    tasks = get_all_tasks()
-    t = next((x for x in tasks if x["id"] == task_id), None)
-    if not t:
-        print("[ERROR] Nie znaleziono zadania.")
-        return
-    if t.get("recurring", False):
-        ok = complete_task(task_id)
-        if ok:
-            print("[COMPLETE] Zadanie cykliczne ukończone.")
-        else:
-            print("[ERROR] Nie udało się odhaczyć zadania.")
-    else:
-        rem = remove_task(task_id)
-        if rem:
-            print("[REMOVE] Usunięto jednorazowe zadanie.")
-        else:
-            print("[ERROR] Nie znaleziono zadania do usunięcia.")
-
-def run_server():
-    """
-    Uruchamia serwer Flask wraz z APSchedulerem.
-    """
-    print("[SERVER] Start Flask + APScheduler.")
-    start_scheduler()
-    from server import app  # Import lokalny
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
-def start_scheduler():
-    """
-    Inicjalizuje i uruchamia APScheduler z zaplanowanymi zadaniami.
-    """
-    global scheduler
-    scheduler = BackgroundScheduler()
-    # Co 15 minut przypomnienia
-    scheduler.add_job(remind_tasks, "interval", minutes=15)
-    # Co 5 minut monitor HRV
-    scheduler.add_job(run_hrv_monitor, "interval", minutes=5)
-    # Codziennie o 3:00 reset zadań daily
-    scheduler.add_job(reset_daily_recurring_tasks, "cron", hour=3, minute=0)
-    scheduler.start()
-
-def parse_args():
-    """
-    Parsuje argumenty wiersza poleceń.
-
-    Zwraca:
-        Argumenty przekazane do skryptu.
-    """
-    parser = argparse.ArgumentParser(description="ADHD Manager – CLI.")
-    parser.add_argument("command", choices=["score", "remind", "complete", "server", "reset", "hrvtest"])
-    parser.add_argument("--task_id", help="ID zadania")
-    return parser.parse_args()
-
-def main():
-    args = parse_args()
-    if args.command == "score":
-        score_tasks_interactively()
-    elif args.command == "remind":
-        remind_tasks()
-    elif args.command == "complete":
-        if not args.task_id:
-            print("Musisz podać --task_id=..")
-        else:
-            complete_task_cli(args.task_id)
-    elif args.command == "server":
-        run_server()
-    elif args.command == "reset":
-        reset_daily_recurring_tasks()
-    elif args.command == "hrvtest":
-        run_hrv_monitor()
+@app.route('/oauth2callback')
+def oauth2callback():
+    state = session.get('state')
+    flow = get_google_flow()
+    flow.fetch_token(authorization_response=request.url)
+    creds = flow.credentials
+    save_google_credentials(creds)
+    return redirect(url_for('api_get_tasks'))
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True, port=5000)

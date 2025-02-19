@@ -23,16 +23,6 @@ CREDENTIALS_FILE = 'credentials.json'
 TOKEN_FILE = 'token.pickle'
 
 def get_service():
-    try:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            'credentials.json', SCOPES)
-        credentials = flow.run_local_server(port=0)
-        service = build('calendar', 'v3', credentials=credentials)
-        return service
-    except FileNotFoundError:
-        print("Error: 'credentials.json' file not found.")
-        return None
-
     creds = None
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, 'rb') as token:
@@ -41,9 +31,11 @@ def get_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
+            try:
+                creds = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES).run_local_server(port=0)
+            except FileNotFoundError:
+                print("Error: 'credentials.json' file not found.")
+                return None
         with open(TOKEN_FILE, 'wb') as token:
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)

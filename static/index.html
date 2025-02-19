@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Menedżer Zadań </title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #e0e0e0;
+    }
+    h1 {
+      color: #ff3333;
+    }
+    .table {
+      background-color: #333;
+    }
+    .thead-dark th {
+      background-color: #000;
+      border-color: #444;
+      color: #ffffff; /* Tekst w nagłówku tabeli na biało */
+    }
+    .table td, .table th {
+      color: #ffffff; /* Tekst w komórkach tabeli na biało */
+    }
+    .btn-info {
+      background-color: #ff3333;
+      border-color: #cc0000;
+    }
+    .slider {
+      width: 150px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="my-4 text-center">Menedżer Zadań</h1>
+    <div class="text-center mb-3">
+      <button id="voiceAddBtn" class="btn btn-primary">Dodaj zadanie głosowo</button>
+    </div>
+    <table class="table table-bordered table-striped" id="tasks-table">
+      <thead class="thead-dark">
+        <tr>
+          <th>ID</th>
+          <th>Tytuł</th>
+          <th>Deadline</th>
+          <th>Priorytet</th>
+          <th>Akcja</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Zadania będą ładowane dynamicznie -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Multi-step Q&A do ustalania priorytetu -->
+  <div class="modal fade" id="priorityQAModal" tabindex="-1" role="dialog" aria-labelledby="priorityQAModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content" style="background-color: #444; color: #e0e0e0;">
+        <div class="modal-header">
+          <h5 id="priorityQAModalLabel" class="modal-title">Ustal priorytet zadania (Q&A)</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Zamknij" style="color: #e0e0e0;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="qaQuestionText"></p>
+          <input type="text" id="qaAnswerInput" class="form-control">
+          <input type="hidden" id="qaTaskId">
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="qaNextBtn" class="btn btn-primary">Dalej</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal do dodawania zadania głosowo -->
+  <div class="modal fade" id="voicePriorityModal" tabindex="-1" role="dialog" aria-labelledby="voicePriorityModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content" style="background-color: #444; color: #e0e0e0;">
+        <div class="modal-header">
+          <h5 id="voicePriorityModalLabel" class="modal-title">Ustal priorytet dla nowego zadania</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Zamknij" style="color: #e0e0e0;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Podaj priorytet (1-10):</p>
+          <input type="number" id="voiceNewPriorityInput" class="form-control" min="1" max="10" step="0.1">
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="saveVoiceTaskBtn" class="btn btn-primary">Zapisz zadanie</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Anuluj</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skrypty JS, jQuery, Popper.js, Bootstrap -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    let recognizedTitle = "";
+    let currentQAIndex = 0;
+    let qaResponses = {};
+    let currentTaskId = "";
+
+    // Rozszerzona tablica pytań – pierwsze 5 są numeryczne, ostatnie to pytanie o deadline
+    const questions = [
+      { key: 'urgency', text: "Jak pilne jest to zadanie? (1-10)", type: "numeric" },
+      { key: 'longTerm', text: "Jakie jest długoterminowe znaczenie tego zadania? (1-10)", type: "numeric" },
+      { key: 'delay', text: "Jakie będą konsekwencje opóźnienia zadania? (1-10)", type: "numeric" },
+      { key: 'complexity', text: "Jak trudne jest wykonanie zadania? (1-10)", type: "numeric" },
+      { key: 'resources', text: "Jakie zasoby są potrzebne do wykonania zadania? (1-10)", type: "numeric" },
+      { key: 'deadline', text: "Czy zadanie ma deadline? Jeśli tak, podaj go w formacie YYYY-MM-DD (lub pozostaw puste)", type: "text" }
+    ];
+
+    // Ładowanie zadań z endpointu /tasks_json
+    function loadTasks() {
+      fetch('/tasks_json')
+        .then(response => response.json())
+        .then(tasks => {
+          const tbody = document.querySelector('#tasks-table tbody');
+          tbody.innerHTML = '';
+          tasks.forEach(task => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${task.id}</td>
+              <td>${task.title}</td>
+              <td>${task.deadline ? task.deadline : ""}</td>
+              <td>${task.priority}</td>
+              <td>
+                <button class="btn btn-sm btn-info" onclick="openQAModal('${task.id}')">Ustal priorytet (Q&A)</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(error => console.error("Błąd ładowania zadań:", error));
+    }
+
+    // Funkcja otwierająca modal Q&A dla danego zadania
+    function openQAModal(taskId) {
+      currentQAIndex = 0;
+      qaResponses = {};
+      currentTaskId = taskId;
+      document.getElementById("qaTaskId").value = taskId;
+      document.getElementById("qaAnswerInput").value = "";
+      document.getElementById("qaQuestionText").innerText = questions[currentQAIndex].text;
+      $('#priorityQAModal').modal('show');
+    }
+
+    // Obsługa przycisku "Dalej" w modal Q&A
+    document.getElementById("qaNextBtn").addEventListener("click", function() {
+      const answerInput = document.getElementById("qaAnswerInput");
+      const answerValue = answerInput.value;
+      const currentQuestion = questions[currentQAIndex];
+
+      if (currentQuestion.type === "numeric") {
+          const answer = parseFloat(answerValue);
+          if (!answer || answer < 1 || answer > 10) {
+              alert("Podaj wartość z przedziału 1-10.");
+              return;
+          }
+          qaResponses[currentQuestion.key] = answer;
+          // Jeśli pierwsze pytanie (urgency) ma wartość >= 9, ustal priorytet na 10 i przejdź do pytania o deadline
+          if (currentQAIndex === 0 && answer >= 9) {
+              qaResponses['finalPriority'] = 10;
+              currentQAIndex = questions.length - 1; // przejdź do pytania o deadline
+              document.getElementById("qaQuestionText").innerText = questions[currentQAIndex].text;
+              answerInput.value = "";
+              return;
+          }
+          currentQAIndex++;
+      } else if (currentQuestion.type === "text") {
+          qaResponses[currentQuestion.key] = answerValue.trim() || null;
+          currentQAIndex++;
+      }
+
+      if (currentQAIndex < questions.length) {
+          document.getElementById("qaQuestionText").innerText = questions[currentQAIndex].text;
+          answerInput.value = "";
+      } else {
+          // Jeśli priorytet nie został ustalony przez pierwsze pytanie, oblicz średnią z pytań 1-5
+          let finalPriority = qaResponses['finalPriority'];
+          if (finalPriority === undefined) {
+              let sum = 0, count = 0;
+              for (let i = 0; i < questions.length - 1; i++) {
+                  const key = questions[i].key;
+                  if (qaResponses[key] !== undefined) {
+                      sum += qaResponses[key];
+                      count++;
+                  }
+              }
+              finalPriority = parseFloat((sum / count).toFixed(1));
+          }
+          const deadline = qaResponses['deadline']; // może być puste (null)
+          submitQAPriority(finalPriority, deadline);
+      }
+    });
+
+    // Funkcja wysyłająca wynik Q&A do backendu
+    function submitQAPriority(finalPriority, deadline) {
+      fetch('/update_task_priority', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: currentTaskId, priority: finalPriority, deadline: deadline })
+      })
+      .then(response => response.json())
+      .then(data => {
+          console.log("Aktualizacja priorytetu Q&A:", data);
+          $('#priorityQAModal').modal('hide');
+          loadTasks();
+      })
+      .catch(error => console.error("Błąd aktualizacji priorytetu Q&A:", error));
+    }
+
+    // Dodawanie zadania głosowo
+    const voiceAddBtn = document.getElementById("voiceAddBtn");
+    voiceAddBtn.addEventListener("click", function() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+          alert("Twoja przeglądarka nie obsługuje rozpoznawania mowy.");
+          return;
+      }
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pl-PL";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.start();
+      recognition.onresult = function(event) {
+          recognizedTitle = event.results[0][0].transcript;
+          console.log("Rozpoznany tekst:", recognizedTitle);
+          $('#voicePriorityModal').modal('show');
+      };
+      recognition.onerror = function(event) {
+          console.error("Błąd rozpoznawania mowy:", event.error);
+          alert("Wystąpił błąd podczas rozpoznawania mowy.");
+      };
+    });
+
+    // Obsługa zapisu zadania dodanego głosowo
+    document.getElementById("saveVoiceTaskBtn").addEventListener("click", function() {
+      const voicePriority = parseFloat(document.getElementById("voiceNewPriorityInput").value);
+      if (!voicePriority || voicePriority < 1 || voicePriority > 10) {
+          alert("Podaj wartość priorytetu z przedziału 1-10.");
+          return;
+      }
+      fetch('/add_task', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              title: recognizedTitle,
+              priority: voicePriority
+          })
+      })
+      .then(response => response.json())
+      .then(data => {
+          console.log("Dodano zadanie głosowe:", data);
+          $('#voicePriorityModal').modal('hide');
+          loadTasks();
+      })
+      .catch(error => console.error("Błąd dodawania zadania głosowego:", error));
+    });
+
+    window.onload = loadTasks;
+  </script>
+</body>
+</html>
