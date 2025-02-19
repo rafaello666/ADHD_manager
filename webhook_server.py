@@ -5,14 +5,9 @@ import requests
 app = Flask(__name__)
 
 # Pobierz token GitHub ze zmiennej środowiskowej
-os.environ["GITHUB_TOKEN"] = "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"
-
-# Odczytaj zmienną środowiskową
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 if not GITHUB_TOKEN:
     raise ValueError("Nie znaleziono tokenu GitHub. Ustaw zmienną środowiskową GITHUB_TOKEN.")
-
-print("Token został ustawiony:", GITHUB_TOKEN)
 
 # Ustawienia repozytorium
 OWNER = "Rafaello666"          # Twój login GitHub
