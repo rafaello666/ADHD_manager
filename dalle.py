@@ -4,7 +4,13 @@ client = OpenAI()
 
 response = client.images.generate(
     model="dall-e-3",
-    prompt="""A modern, minimalist logo for an application called 'ADHD_Manager', symbolizing focus, productivity, and well-being. Use bright, uplifting colors (like teal, yellow, or vibrant purple), simple geometric shapes, and a clean tech-inspired aesthetic. The design should incorporate a subtle hint of a brain outline or a heartbeat/HRV line, reflecting mental health and personal monitoring. Aim for a balanced composition that works well as an app icon, with a slightly playful yet professional vibe. Incorporate subtle circuit patterns. No text.""",
+    prompt="""Design a modern and minimalistic icon for a PDF file. The icon should feature:
+
+A red document outline with folded top-right corner, symbolizing a file.
+A large, bold text 'PDF' in white letters centered on the document.
+A simple, clean style with flat design principles.
+Background: transparent or white, suitable for use on both light and dark themes.
+Dimensions: square aspect ratio (512x512 or larger) for scalability.""",
 
 
 

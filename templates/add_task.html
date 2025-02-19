@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8">
-  <title>Edytuj Zadanie</title>
+  <title>Dodaj Zadanie</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -24,15 +24,17 @@
     }
     .btn {
       cursor: pointer; padding: 8px 15px;
-      background: #ffc107; color: #212529;
+      background: #28a745; color: #fff;
       border: none; border-radius: 4px;
     }
     .btn:hover {
-      background: #e0a800;
+      background: #218838;
     }
     .back-link {
-      text-decoration: none; padding: 6px 10px;
-      background: #6c757d; color: #fff;
+      text-decoration: none;
+      padding: 6px 10px;
+      background: #6c757d;
+      color: #fff;
       border-radius: 4px;
     }
     .back-link:hover {
@@ -42,23 +44,23 @@
 </head>
 <body>
 <div class="container">
-  <h1>Edytuj Zadanie</h1>
-  <form method="POST">
+  <h1>Dodaj Zadanie</h1>
+  <form action="{{ url_for('add_task_post') }}" method="POST">
     {{ csrf_token() }}
 
     <div class="form-group">
-      <label for="title">Tytuł:</label>
-      <input type="text" id="title" name="title" value="{{ task.title }}">
+      <label for="title">Tytuł zadania:</label>
+      <input type="text" id="title" name="title" required>
     </div>
     <div class="form-group">
-      <label for="deadline">Deadline:</label>
-      <input type="text" id="deadline" name="deadline" value="{{ task.deadline }}">
+      <label for="deadline">Deadline (opcjonalnie):</label>
+      <input type="text" id="deadline" name="deadline" placeholder="2025-02-01 10:00">
     </div>
     <div class="form-group">
-      <label for="waga">Waga:</label>
-      <input type="number" step="0.1" id="waga" name="waga" value="{{ task.waga|default('0.0') }}">
+      <label for="waga">Waga (1.0 - 10.0):</label>
+      <input type="number" step="0.1" id="waga" name="waga">
     </div>
-    <button type="submit" class="btn">Zapisz</button>
+    <button type="submit" class="btn">Dodaj</button>
   </form>
   <p><a href="{{ url_for('home') }}" class="back-link">Powrót</a></p>
 </div>

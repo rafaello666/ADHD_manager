@@ -4,9 +4,6 @@ import os
 DATA_FILE = "tasks.json"
 
 def load_tasks():
-    """
-    Wczytuje listę zadań z pliku JSON.
-    """
     if not os.path.exists(DATA_FILE):
         print(f"Plik {DATA_FILE} nie istnieje. Nie ma czego modyfikować!")
         return []
@@ -18,17 +15,10 @@ def load_tasks():
         return []
 
 def save_tasks(tasks_list):
-    """
-    Zapisuje listę zadań do pliku JSON.
-    """
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(tasks_list, f, indent=2, ensure_ascii=False)
 
 def ask_yes_no(prompt_text):
-    """
-    Pomocnicza funkcja: pyta o tak/nie.
-    Zwraca True/False.
-    """
     while True:
         ans = input(prompt_text + " [t/n]: ").strip().lower()
         if ans in ["t", "tak", "y", "yes"]:
@@ -39,24 +29,15 @@ def ask_yes_no(prompt_text):
             print("Wpisz 't' lub 'n'.")
 
 def ask_string(prompt_text, default=None):
-    """
-    Pyta użytkownika o zwykły string (np. 'daily').
-    Zwraca to co wpisano lub default, jeśli user zostawi puste.
-    """
     val = input(f"{prompt_text} (obecnie: {default}): ").strip()
     if val == "":
-        return default  # pozostawiamy bez zmian
+        return default
     return val
 
 def ask_integer_or_none(prompt_text, default=None):
-    """
-    Pyta o liczbę całkowitą 1–10 lub 'NIE WIEM', albo Enter = brak zmiany.
-    Zwraca int, None lub starą wartość, jeśli user nic nie wpisał.
-    """
     print(f"{prompt_text} (obecnie: {default}), wpisz 1–10, 'NIE WIEM' lub Enter, żeby zostawić bez zmian.")
     ans = input("→ ").strip().upper()
     if ans == "":
-        # pusta odpowiedź => nie zmieniamy
         return default
     if ans == "NIE WIEM":
         return None
@@ -72,33 +53,28 @@ def ask_integer_or_none(prompt_text, default=None):
         return default
 
 def modify_task(task):
-    """
-    Modyfikuje w miejscu podany obiekt zadania,
-    pytając użytkownika o nowe wartości (lub zostawienie starych).
-    """
     print(f"\n--- Modyfikacja zadania ID='{task['id']}' (tytuł: {task['title']}) ---")
-
-    # 1. Czy zadanie jest ukończone?
+    # 1. Completed?
     print(f"Obecny status 'completed': {task.get('completed', False)}")
     if ask_yes_no("Czy chcesz zmienić status ukończenia?"):
         new_status = ask_yes_no("Czy zadanie jest ukończone teraz?")
         task["completed"] = new_status
 
-    # 2. Czy zadanie jest cykliczne (recurring)?
+    # 2. recurring?
     old_recurring = task.get("recurring", False)
     if ask_yes_no(f"Obecnie recurring={old_recurring}. Zmienić to?"):
         new_recurring = ask_yes_no("Czy zadanie jest cykliczne?")
         task["recurring"] = new_recurring
         if new_recurring:
             old_pattern = task.get("recurrence_pattern", "")
-            new_pattern = ask_string("Wpisz wzorzec powtarzania (np. 'daily', 'weekly', 'MonWedFri')", default=old_pattern)
+            new_pattern = ask_string("Wpisz wzorzec powtarzania (np. 'daily')", default=old_pattern)
             task["recurrence_pattern"] = new_pattern
         else:
             task["recurrence_pattern"] = None
 
-    # 3. deadline_strictness    
+    # 3. deadline_strictness
     old_deadline = task.get("deadline_strictness", None)
-    new_deadline = ask_integer_or_none("deadline_strictness (1–10, 'NIE WIEM' lub Enter)", default=old_deadline)
+    new_deadline = ask_integer_or_none("deadline_strictness", default=old_deadline)
     task["deadline_strictness"] = new_deadline
 
     # 4. description
@@ -112,8 +88,6 @@ def modify_task(task):
     print(f"Obecne notatki: {old_notes}")
     new_notes = ask_string("Nowe notatki? (Enter = bez zmian)", default=old_notes)
     task["notes"] = new_notes
-
-    # (priority i last_reminder zwykle ustawia sam system – więc tu możemy nie ruszać)
 
 def main():
     print(f"Skrypt do modyfikacji istniejących zadań w pliku {DATA_FILE}.\n")
@@ -134,7 +108,6 @@ def main():
         else:
             print("Pomijam.\n")
 
-    # Na koniec zapisujemy całość
     save_tasks(tasks_list)
     print(f"\nZapisano wszystkie zmiany do {DATA_FILE}. Dziękuję!")
 

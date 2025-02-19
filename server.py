@@ -1,145 +1,176 @@
-# server.py
-
-"""
-Główny moduł serwera Flask dla aplikacji ADHD Manager.
-"""
-
 import os
-import sys
-import time
-import atexit
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for
-from flask_wtf import CSRFProtect
-from apscheduler.schedulers.background import BackgroundScheduler
-from dotenv import load_dotenv
-from flask_wtf.csrf import CSRFError
+import json
+from flask import Flask, jsonify, request, send_from_directory
+import logging
 
-# Zakładane moduły aplikacji
-from tasks import get_all_tasks, save_task, remove_task, complete_task
-from calculations import calculate_priority
-from twilio_sms import send_sms
-from google_calendar_integration import get_upcoming_events
-from hrv_monitor import run_hrv_monitor
+app = Flask(__name__, static_folder="static")
+app.logger.setLevel(logging.INFO)
 
-# Załaduj zmienne środowiskowe z pliku .env
-load_dotenv()
+TASKS_JSON_PATH = "tasks.json"
 
-app = Flask(__name__)
+def get_tasks_from_json():
+    """
+    Odczytuje zadania z pliku JSON, usuwa klucze zaczynające się od "wplyw_na_monike"
+    i zwraca listę zadań.
+    """
+    if not os.path.exists(TASKS_JSON_PATH):
+        app.logger.warning("Plik %s nie istnieje.", TASKS_JSON_PATH)
+        return []
+    try:
+        with open(TASKS_JSON_PATH, "r", encoding="utf-8") as f:
+            tasks = json.load(f)
+        filtered_tasks = []
+        for task in tasks:
+            # Usuń klucze zaczynające się od "wplyw_na_monike"
+            filtered_task = { key: value for key, value in task.items() if not key.startswith("wplyw_na_monike") }
+            filtered_tasks.append(filtered_task)
+        return filtered_tasks
+    except Exception as e:
+        app.logger.error("Błąd odczytu pliku JSON: %s", str(e))
+        return []
 
-# Ustaw SECRET_KEY z pliku .env
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+def save_tasks_to_json(tasks):
+    """
+    Zapisuje listę zadań do pliku JSON.
+    """
+    try:
+        with open(TASKS_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        app.logger.error("Błąd zapisu do pliku JSON: %s", str(e))
+        return False
 
-# Inicjalizacja ochrony CSRF
-csrf = CSRFProtect(app)
+@app.route('/tasks_json', methods=['GET'])
+def tasks_json():
+    """
+    Zwraca zadania z pliku tasks.json, posortowane według:
+      - 'priority' malejąco,
+      - 'deadline' rosnąco (jeśli brak, traktowane jako pusty string).
+    """
+    try:
+        tasks = get_tasks_from_json()
+        tasks = sorted(tasks, key=lambda t: (-t.get('priority', 0), t.get('deadline') or ""))
+        return jsonify(tasks), 200
+    except Exception as e:
+        app.logger.error("Błąd w /tasks_json: %s", str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
 
-scheduler = BackgroundScheduler()
+@app.route('/update_task_priority', methods=['POST'])
+def update_task_priority():
+    """
+    Aktualizuje pole 'priority' (i opcjonalnie 'deadline') dla zadania.
+    Oczekuje JSON z:
+      - id: identyfikator zadania (np. "task_2")
+      - priority: nowa wartość (liczba)
+      - deadline: opcjonalna wartość deadline (string, np. "2025-02-15")
+    """
+    try:
+        data = request.get_json()
+        task_id = data.get("id")
+        new_priority = data.get("priority")
+        new_deadline = data.get("deadline")  # opcjonalnie
+        if not task_id or new_priority is None:
+            return jsonify({"error": "id and priority are required"}), 400
 
-@app.route("/")
-def home():
-    tasks = get_all_tasks()
+        tasks = get_tasks_from_json()
+        task_found = False
+        for task in tasks:
+            if task.get("id") == task_id:
+                task["priority"] = new_priority
+                # Aktualizuj deadline, jeśli podano – może być pusta wartość (przyjmujemy null, jeśli brak)
+                if new_deadline is not None:
+                    task["deadline"] = new_deadline
+                task_found = True
+                break
+        if not task_found:
+            return jsonify({"error": "Task not found"}), 404
 
-    total = len(tasks)
-    completed_count = sum(1 for t in tasks if t.get("completed"))
-    completion_ratio = round((completed_count / total) * 100, 1) if total > 0 else 0
+        if save_tasks_to_json(tasks):
+            return jsonify({"message": "Priority updated successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to save tasks"}), 500
+    except Exception as e:
+        app.logger.error("Błąd w /update_task_priority: %s", str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
 
-    tasks.sort(key=lambda x: x.get("priority", 0), reverse=True)
-
-    priority_counts = {
-        'wysoki': sum(1 for t in tasks if t.get('priority', 0) > 7),
-        'sredni': sum(1 for t in tasks if 4 < t.get('priority', 0) <= 7),
-        'niski': sum(1 for t in tasks if t.get('priority', 0) <= 4),
-    }
-
-    return render_template("index.html",
-                           tasks=tasks,
-                           total_tasks=total,
-                           completed_tasks=completed_count,
-                           completion_ratio=completion_ratio,
-                           priority_counts=priority_counts)
-
-@app.route("/add_task", methods=["POST"])
+@app.route('/add_task', methods=['POST'])
 def add_task():
-    title = request.form.get("title", "").strip()
-    deadline = request.form.get("deadline", "")
-    if not title:
-        return "Brak tytułu zadania", 400
+    """
+    Dodaje nowe zadanie.
+    Oczekuje JSON z:
+      - title: tytuł zadania
+      - priority: priorytet zadania (1-10)
+    Nowe zadanie otrzyma unikalne ID (np. "task_N"). Inne pola ustawiamy domyślnie.
+    """
+    try:
+        data = request.get_json()
+        title = data.get("title")
+        priority = data.get("priority")
+        if not title or priority is None:
+            return jsonify({"error": "title and priority are required"}), 400
 
-    new_id = f"task_{int(time.time())}"
-    new_task = {
-        "id": new_id,
-        "title": title,
-        "completed": False,
-        "deadline": deadline if deadline else None,
-        "priority": 0,
-    }
-    save_task(new_task)
-    return redirect(url_for("home"))
+        tasks = get_tasks_from_json()
+        # Generowanie nowego ID
+        existing_ids = [t.get("id", "") for t in tasks if t.get("id", "").startswith("task_")]
+        if existing_ids:
+            numbers = []
+            # Wyodrębnij liczby z identyfikatorów
+            for tid in existing_ids:
+                try:
+                    num = int(tid.split("_")[1])
+                    numbers.append(num)
+                except:
+                    continue
+            if numbers:
+                new_id = "task_" + str(max(numbers) + 1)
+            else:
+                new_id = "task_1"
+        else:
+            new_id = "task_1"
+        # Ustawiamy domyślne wartości dla pozostałych pól
+        new_task = {
+            "id": new_id,
+            "title": title,
+            "completed": False,
+            "last_reminder": None,
+            "priority": priority,
+            "pilne_dla_przetrwania": None,
+            "dlugoterminowe_znaczenie": None,
+            "konsekwencje_opoznienia": None,
+            "czas_realizacji": None,
+            "potrzebne_zasoby": None,
+            "deadline_strictness": None,
+            "wplyw_na_monike_1h": None,
+            "wplyw_na_monike_3h": None,
+            "wplyw_na_monike_12h": None,
+            "wplyw_na_monike_48h": None,
+            "deadline": None,
+            "estimated_time": None,
+            "recurring": False,
+            "recurrence_pattern": None,
+            "tags": "",
+            "subtasks": [],
+            "timer_running": False,
+            "timer_end": None,
+            "description": "",
+            "notes": ""
+        }
+        tasks.append(new_task)
+        if save_tasks_to_json(tasks):
+            return jsonify({"message": "Task added successfully", "task": new_task}), 201
+        else:
+            return jsonify({"error": "Failed to save task"}), 500
+    except Exception as e:
+        app.logger.error("Błąd w /add_task: %s", str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
 
-@app.route("/tasks/<task_id>/complete", methods=["POST"])
-def complete_task_route(task_id):
-    ok = complete_task(task_id)
-    return redirect(url_for("home")) if ok else "Nie udało się ukończyć zadania", 404
+@app.route('/')
+def index():
+    """
+    Serwuje interfejs użytkownika (plik index.html) z katalogu static.
+    """
+    return send_from_directory(app.static_folder, "index.html")
 
-@app.route("/tasks/<task_id>/remove", methods=["POST"])
-def remove_task_route(task_id):
-    rem = remove_task(task_id)
-    return redirect(url_for("home")) if rem else "Nie znaleziono zadania do usunięcia", 404
-
-@app.errorhandler(CSRFError)
-def handle_csrf_error(e):
-    return render_template('csrf_error.html', reason=e.description), 400
-
-def remind_tasks():
-    tasks = get_all_tasks()
-    open_tasks = [x for x in tasks if not x.get("completed")]
-
-    for x in open_tasks:
-        prio = calculate_priority(x)
-        x["priority"] = prio
-        save_task(x)
-
-    open_tasks.sort(key=lambda x: x["priority"], reverse=True)
-    top = open_tasks[0]
-    top_id = top["id"]
-
-    msg = f"Nowy TOP: {top['title']} (Priorytet={top['priority']:.2f})"
-    print("[REMIND] Wysyłamy przypomnienie o top zadaniu.")
-    send_sms(msg)
-
-def check_calendar_and_notify():
-    events = get_upcoming_events(minutes_ahead=30)
-    if not events:
-        print("[CALENDAR] Brak wydarzeń w ciągu 30 minut.")
-        return
-    for ev in events:
-        title = ev.get("summary", "Bez tytułu")
-        loc = ev.get("location", "Brak lokalizacji")
-        start_dt = ev.get("start")
-        diff_min = compute_diff_minutes(start_dt) if start_dt else None
-        if diff_min is not None:
-            msg = f"Uwaga! Za {diff_min} min: '{title}'. Lokalizacja: {loc}"
-            print("[CALENDAR] Wyślę SMS:", msg)
-            send_sms(msg)
-
-def compute_diff_minutes(start_dt: datetime) -> int:
-    now = datetime.now()
-    diff = start_dt - now
-    return int(diff.total_seconds() / 60)
-
-def start_scheduler():
-    scheduler.add_job(remind_tasks, "interval", minutes=15)
-    scheduler.add_job(check_calendar_and_notify, "interval", minutes=5)
-    scheduler.add_job(run_hrv_monitor, "interval", minutes=5)
-    scheduler.start()
-    print("[SCHEDULER] Scheduler wystartował.")
-
-@atexit.register
-def shutdown_scheduler():
-    if scheduler.running:
-        scheduler.shutdown()
-        print("[SCHEDULER] Scheduler został zatrzymany.")
-
-if __name__ == "__main__":
-    start_scheduler()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)

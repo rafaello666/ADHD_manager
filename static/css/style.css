@@ -1,6 +1,6 @@
-/* Umieść poniższy plik w: static/css/style.css */
+/* style.css */
 
-/* Globalne reset / podstawowy styl */
+/* RESET */
 * {
   margin: 0;
   padding: 0;
@@ -8,197 +8,138 @@
 }
 
 body {
-  background-color: #121212; /* ciemne tło – możesz zmienić na ciemny granat, np. #0c0e1b */
-  color: #ffffff;
-  font-family: Arial, sans-serif;
-  line-height: 1.4;
+  background: #000;
+  color: #ddd;
+  font-family: "Montserrat", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
-/* Główne nagłówki i sekcje */
+/* Nagłówek główny */
 .main-header {
   text-align: center;
-  padding: 2rem 1rem;
-  border-bottom: 1px solid #333;
-  position: relative;
+  padding: 20px;
+  background: #111;
 }
-
-/* Okrągły wskaźnik postępu */
-.progress-circle-container {
-  display: inline-block;
-  margin-bottom: 1rem;
-}
-
-.progress-circle {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: conic-gradient(
-    #ff0080 80%,   /* Kolor pierścienia – intensywny róż/fiolet */
-    #444 0%        /* Reszta wypełnienia */
-  );
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto;
-  position: relative;
-}
-
-.progress-circle::before {
-  /* wewnętrzny okrąg, tworzący "grubość" pierścienia */
-  content: "";
-  width: 100px;
-  height: 100px;
-  background-color: #121212;
-  border-radius: 50%;
-  position: absolute;
-}
-
-.progress-text {
-  font-size: 1.2rem;
-  font-weight: bold;
-  z-index: 1; /* na wierzchu */
-  color: #fff;
-}
-
 .main-title {
-  font-size: 2rem;
-  margin: 1rem 0 0.5rem 0;
-}
-
-.subtitle {
-  font-size: 1.2rem;
-  color: #aaaaaa; /* lub jaśniejszy szary do subtelnych nagłówków */
-  margin-bottom: 1rem;
-}
-
-.btn-add-task {
-  background-color: #ff0066; /* intensywny róż/czerwień/fuksja */
   color: #fff;
-  border: none;
-  padding: 0.8rem 1.2rem;
+  margin: 10px 0;
+}
+.subtitle {
+  color: #aaa;
   font-size: 1rem;
-  cursor: pointer;
-  border-radius: 4px;
-  margin-bottom: 1rem;
 }
-
-.btn-add-task:hover {
-  background-color: #e6005c; /* ciemniejszy odcień po najechaniu */
+.progress-circle-container {
+  margin: 10px auto;
+  width: 60px;
+  height: 60px;
 }
-
+.progress-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #333;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.progress-text {
+  font-weight: bold;
+}
 .motivational-quote {
+  margin-top: 10px;
   font-style: italic;
-  color: #f0f0f0;
-  max-width: 600px;
-  margin: 1rem auto 0 auto;
 }
 
-/* Główna część z dwiema kolumnami */
+/* Główna zawartość – siatka */
 .content-container {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 20px;
+  gap: 20px;
 }
-
-/* Lewa kolumna: Panel statystyk */
 .stats-panel {
-  width: 25%;
-  background-color: #1e1e1e;
-  padding: 1rem;
-  border-radius: 4px;
-  margin-right: 2rem;
+  width: 20%;
+  background: #111;
+  padding: 10px;
 }
-
-.stats-panel h3 {
-  margin-bottom: 1rem;
-}
-
-/* Prawa kolumna: Lista zadań */
-.task-list-section {
-  width: 70%;
-}
-
-.task-list-section h3 {
-  margin-bottom: 1rem;
+.task-list {
+  width: 80%;
+  background: #111;
+  padding: 10px;
 }
 
 /* Tabela zadań */
 .task-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 10px;
 }
-
-.task-table thead {
-  background-color: #2c2c2c;
-}
-
-.task-table th,
-.task-table td {
-  padding: 0.8rem;
+.task-table th, .task-table td {
+  padding: 10px;
+  border: 1px solid #333;
   text-align: left;
-  border-bottom: 1px solid #333;
+  color: #ccc;
 }
 
-.task-table th {
-  font-weight: 600;
-  color: #fff;
-}
-
-/* Etykiety priorytetów */
-.priority-label {
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-weight: bold;
-}
-.priority-high {
-  background-color: #ff4d4d; /* intensywna czerwień */
-  color: #fff;
-}
-.priority-medium {
-  background-color: #ff9900; /* pomarańcz / żółty */
-  color: #fff;
-}
-.priority-low {
-  background-color: #33cc33; /* zielony */
-  color: #fff;
-}
-
-/* Etykiety statusów */
-.status-label {
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-weight: bold;
-}
-.status-open {
-  background-color: #ff4444; /* czerwień dla "Nieukończone" */
-  color: #fff;
-}
-.status-closed {
-  background-color: #5555ff; /* np. niebieski dla "Ukończone" */
-  color: #fff;
-}
-
-/* Przyciski w kolumnie "Akcje" */
-.action-btn {
-  background-color: #444;
+/* Przyciski akcji */
+.btn-cta {
+  background: #ff003c;
   color: #fff;
   border: none;
-  padding: 0.4rem 0.8rem;
-  margin-right: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.3s, transform 0.3s;
+  text-decoration: none;
+  margin-top: 10px;
+  display: inline-block;
+}
+.btn-cta:hover {
+  background: #ff5f6d;
+  transform: scale(1.05);
+}
+
+.btn-action {
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  margin: 2px;
   border-radius: 4px;
-  font-size: 0.9rem;
+  cursor: pointer;
+}
+.btn-action.done {
+  background: #1cc36b;
+}
+.btn-action.edit {
+  background: #ff8a00;
+}
+.btn-action.delete {
+  background: #c44141;
 }
 
-.action-btn:hover {
-  background-color: #666;
+/* Status: Ukończone/Nieukończone */
+.status-tag {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+.status-tag.done {
+  background: #666;
+}
+.status-tag.ongoing {
+  background: #ff003c;
+  color: #fff;
 }
 
-.main-footer {
+/* Stopka */
+.footer {
   text-align: center;
-  padding: 1rem;
-  border-top: 1px solid #333;
-  margin-top: 1rem;
-  color: #999;
+  padding: 10px;
+  background: #111;
+  color: #aaa;
+  margin-top: 20px;
 }
