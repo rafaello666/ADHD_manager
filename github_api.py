@@ -46,7 +46,7 @@ def analyze_code(code, file_path):
     Poniżej znajduje się przykładowa funkcja (placeholder):
     """
     # Przykładowy kod – zastąp to własną integracją:
-    model_api_url = "https://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/analiza"
+    model_api_url = "/analiza"
     payload = {
         "prompt": f"Przeanalizuj poniższy kod z pliku {file_path} i podaj wnioski dotyczące jego struktury, potencjalnych problemów oraz możliwych usprawnień w kontekście funkcjonalności całego narzedzia, które jest menadżerem życia z uwzględnieniem zaburzeń psychicznych - mocnym ADHD użytkownika - Rafała Bartosika.:\n\n{code}",
         "model": "o3-mini-high",
