@@ -15,7 +15,7 @@
       background-color: #f5f5f5;
     }
     
-    /* Nagłówek */
+    /* Nagłówek i logo */
     header {
       background: linear-gradient(90deg, #4B0082, #FF8C00, #00CED1);
       padding: 15px 20px;
@@ -29,7 +29,7 @@
       align-items: center;
     }
     .logo-container img {
-      height: 60px; /* dostosuj wysokość wg uznania */
+      height: 60px; /* Wysokość logo */
       margin-right: 15px;
     }
     .logo-container h1 {
@@ -46,7 +46,6 @@
     nav li {
       display: flex;
       align-items: center;
-      position: relative;
     }
     nav a {
       text-decoration: none;
@@ -58,7 +57,7 @@
       gap: 5px;
     }
     nav a img {
-      height: 28px; /* dostosuj rozmiar ikony */
+      height: 28px;
       width: 28px;
     }
     nav a:hover {
@@ -81,30 +80,27 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       padding: 20px;
-      background: linear-gradient(to bottom, #4B0082 40%, #87CEFA 100%);
       color: #fff;
       overflow: hidden;
+      background: url("images/4.4.webp") no-repeat center/cover; /* Tło */
     }
-    /* Delikatna siatka w tle */
-    .section-tasks::after {
+    .section-tasks::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: repeating-linear-gradient(
-        45deg,
-        rgba(255,255,255,0.1),
-        rgba(255,255,255,0.1) 1px,
-        transparent 1px,
-        transparent 20px
-      );
+      background: linear-gradient(to bottom, rgba(75,0,130,0.5) 40%, rgba(135,206,250,0.5) 100%);
       pointer-events: none;
       border-radius: 8px;
     }
     .section-tasks h2 {
       margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
     }
     .section-tasks ul {
       list-style: none;
+      position: relative;
+      z-index: 1;
     }
     .section-tasks li {
       margin-bottom: 10px;
@@ -117,7 +113,94 @@
       background: rgba(255,255,255,0.3);
     }
     
-    /* Przykładowe ikony w sekcji zadań */
+    /* Sekcja szczegółów zadania */
+    .section-details {
+      flex: 1 1 400px;
+      position: relative;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      color: #333;
+      overflow: hidden;
+      background: url("images/5.1.webp") no-repeat center/cover;
+    }
+    .section-details::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(174,223,247,0.6), rgba(193,225,220,0.6));
+      pointer-events: none;
+      border-radius: 8px;
+    }
+    .section-details h2 {
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Sekcja Podsumowań */
+    .section-summary {
+      flex: 1 1 300px;
+      position: relative;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      color: #fff;
+      overflow: hidden;
+      background: url("images/5.3.webp") no-repeat center/cover;
+    }
+    .section-summary::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(75,0,130,0.6) 60%, rgba(135,206,250,0.6) 40%);
+      pointer-events: none;
+      border-radius: 8px;
+    }
+    
+    /* Sekcja Statystyk */
+    .section-stats {
+      flex: 1 1 300px;
+      position: relative;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      color: #fff;
+      overflow: hidden;
+      background: url("images/5.1.webp") no-repeat center/cover;
+    }
+    .section-stats::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,206,209,0.6) 50%, rgba(255,160,122,0.6) 50%);
+      pointer-events: none;
+      border-radius: 8px;
+    }
+    
+    /* Sekcja wsparcia AI */
+    .section-ai {
+      width: 100%;
+      position: relative;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      text-align: center;
+      color: #fff;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: url("images/5.2.webp") no-repeat center/cover;
+    }
+    .section-ai::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255,140,0,0.6) 50%, rgba(0,206,209,0.6) 50%);
+      pointer-events: none;
+      border-radius: 8px;
+    }
+    
+    /* Ikony akcji */
     .btn-icon {
       display: inline-flex;
       align-items: center;
@@ -128,6 +211,8 @@
       margin-right: 5px;
       cursor: pointer;
       transition: transform 0.2s, background 0.2s;
+      color: #fff;
+      background: rgba(255,255,255,0.2);
     }
     .btn-icon img {
       height: 24px;
@@ -138,84 +223,7 @@
       background: rgba(255,255,255,0.3);
     }
     
-    /* Sekcja szczegółów zadania */
-    .section-details {
-      flex: 1 1 400px;
-      background: linear-gradient(to bottom, #AEDFF7, #C1E1DC);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    /* Sekcja Podsumowań */
-    .section-summary {
-      flex: 1 1 300px;
-      background: linear-gradient(to bottom, #4B0082 60%, #87CEFA 40%);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-      color: #fff;
-    }
-    .section-summary::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        45deg,
-        rgba(255,255,255,0.1),
-        rgba(255,255,255,0.1) 1px,
-        transparent 1px,
-        transparent 20px
-      );
-      pointer-events: none;
-      border-radius: 8px;
-    }
-    
-    /* Sekcja Statystyk */
-    .section-stats {
-      flex: 1 1 300px;
-      background: linear-gradient(to bottom, #00CED1 50%, #FFA07A 50%);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-      color: #fff;
-    }
-    .section-stats::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        45deg,
-        rgba(255,255,255,0.1),
-        rgba(255,255,255,0.1) 1px,
-        transparent 1px,
-        transparent 20px
-      );
-      pointer-events: none;
-      border-radius: 8px;
-    }
-    
-    /* Sekcja wsparcia AI */
-    .section-ai {
-      width: 100%;
-      background: linear-gradient(to bottom, #FF8C00 50%, #00CED1 50%);
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 20px;
-      color: #fff;
-    }
-    
-    /* AI Loader (3 kropki) */
+    /* Loader AI (3 kropki) */
     .ai-loader {
       display: inline-block;
       margin-top: 10px;
@@ -268,7 +276,7 @@
       color: #333;
     }
     
-    /* Przykładowe style button */
+    /* Przykładowy przycisk .btn */
     .btn {
       background: linear-gradient(to bottom, #FF8C00, #00CED1);
       border: none;
@@ -282,6 +290,40 @@
     .btn:hover {
       transform: scale(1.05);
       background: linear-gradient(to bottom, #e67600, #00b9bd);
+    }
+    
+    /* Dodatkowe sekcje dla 4.9.webp i 4.10.webp (opcjonalnie) */
+    .section-extra1, .section-extra2 {
+      width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      color: #333;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .section-extra1 {
+      background: url("images/8.4.webp") no-repeat center/cover;
+    }
+    .section-extra1::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.3);
+      pointer-events: none;
+      border-radius: 8px;
+    }
+    .section-extra2 {
+      background: url("images/5.3.webp") no-repeat center/cover;
+    }
+    .section-extra2::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.3);
+      pointer-events: none;
+      border-radius: 8px;
     }
     
     /* Stopka */
@@ -298,38 +340,38 @@
   <!-- Nagłówek -->
   <header>
     <div class="logo-container">
-      <img src="/images/1.jpg" alt="ADHD Manager Logo">
+      <img src="images/1.jpg" alt="ADHD Manager Logo">
       <h1>ADHD Manager</h1>
     </div>
     <nav>
       <ul>
         <li>
           <a href="#">
-            <img src="/images/2.1.webp" alt="Home icon">
+            <img src="images/2.1.webp" alt="Home icon">
             Strona główna
           </a>
         </li>
         <li>
           <a href="#">
-            <img src="/images/2.2.webp" alt="Tasks icon">
+            <img src="images/2.2.webp" alt="Tasks icon">
             Zadania
           </a>
         </li>
         <li>
           <a href="#">
-            <img src="/images/2.3.webp" alt="Calendar icon">
+            <img src="images/2.3.webp" alt="Calendar icon">
             Kalendarz
           </a>
         </li>
         <li>
           <a href="#">
-            <img src="/images/2.4.webp" alt="Stats icon">
+            <img src="images/2.4.webp" alt="Stats icon">
             Statystyki
           </a>
         </li>
         <li>
           <a href="#">
-            <img src="/images/2.5.webp" alt="Settings icon">
+            <img src="images/2.5.webp" alt="Settings icon">
             Ustawienia
           </a>
         </li>
@@ -341,35 +383,29 @@
   <main>
     <!-- Sekcja listy zadań -->
     <section class="section-tasks">
-      <h2>
-        <img src="/images/2.2.webp" alt="Tasks icon" style="height:24px; vertical-align: middle;">
-        Twoje Zadania
-      </h2>
+      <h2>Twoje Zadania</h2>
       <ul>
-        <li>[High] Przygotuj prezentację - termin: 2025-03-15</li>
-        <li>[Medium] Poranne ćwiczenia - codziennie</li>
+        <li>[High] Przygotuj prezentację – termin: 2025-03-15</li>
+        <li>[Medium] Poranne ćwiczenia – codziennie</li>
         <li>[Low] Uporządkuj dokumenty</li>
       </ul>
       <button class="btn-icon" style="margin-top:10px;">
-        <img src="/images/3.1.webp" alt="Add icon">
-        Dodaj Zadanie
+        <img src="images/4.1.webp" alt="Reminder icon">
+        Przypomnienie
       </button>
     </section>
 
     <!-- Sekcja szczegółów zadania -->
     <section class="section-details">
-      <h2>
-        <img src="/images/3.2.webp" alt="Edit icon" style="height:24px; vertical-align: middle;">
-        Szczegóły Zadania
-      </h2>
+      <h2>Szczegóły Zadania</h2>
       <p>Wybierz zadanie z listy, aby zobaczyć szczegóły. Tutaj wyświetlane będą informacje o zadaniu, jego podzadaniach i możliwościach edycji.</p>
       <div style="margin-top: 10px;">
         <button class="btn-icon">
-          <img src="/images/3.2.webp" alt="Edit icon">
+          <img src="images/3.2.webp" alt="Edit icon">
           Edytuj
         </button>
         <button class="btn-icon">
-          <img src="/images/3.3.webp" alt="Delete icon">
+          <img src="images/4.2.webp" alt="Delete icon">
           Usuń
         </button>
       </div>
@@ -377,19 +413,13 @@
 
     <!-- Sekcja Podsumowań -->
     <section class="section-summary">
-      <h2>
-        <img src="/images/2.4.webp" alt="Stats icon" style="height:24px; vertical-align: middle;">
-        Podsumowanie
-      </h2>
+      <h2>Podsumowanie</h2>
       <p>Ostatnie postępy: 5 zadań ukończonych, 2 w trakcie realizacji.</p>
     </section>
 
     <!-- Sekcja Statystyk -->
     <section class="section-stats">
-      <h2>
-        <img src="/images/2.4.webp" alt="Stats icon" style="height:24px; vertical-align: middle;">
-        Statystyki
-      </h2>
+      <h2>Statystyki</h2>
       <p>Wykres aktywności: Trend wzrostowy w ostatnim tygodniu.</p>
     </section>
   </main>
@@ -399,7 +429,7 @@
     <h2>Wsparcie AI</h2>
     <p>Zapytaj AI o radę, by pomóc Ci zorganizować zadania i zwiększyć produktywność!</p>
     <button class="btn" id="btn-ask-ai">
-      <img src="/images/3.1.webp" alt="AI plus" style="height:20px; vertical-align: middle; margin-right:5px;">
+      <img src="images/4.3.webp" alt="AI plus" style="height:20px; vertical-align: middle; margin-right:5px;">
       Zapytaj AI
     </button>
     <div class="ai-loader" id="ai-loader" style="display: none;">
@@ -407,11 +437,25 @@
     </div>
   </section>
 
+  <!-- Dodatkowe sekcje wykorzystujące 4.9.webp i 4.10.webp -->
+  <section class="section-extra1">
+    <h2>Inspiracja</h2>
+    <p>Możesz tutaj umieścić jakiś cytat motywacyjny lub obrazek z pliku 4.9.webp.</p>
+  </section>
+
+  <section class="section-extra2">
+    <h2>Chill Zone</h2>
+    <p>Strefa relaksu: w tym miejscu użytkownik może wyświetlać wskazówki relaksacyjne czy wizualizacje z pliku 4.10.webp.</p>
+  </section>
+
   <!-- Modal dla funkcji "Zapytaj AI" -->
   <div class="modal" id="aiModal">
     <div class="modal-content">
       <span class="close-modal" id="closeModal">&times;</span>
-      <h3><img src="/images/1.jpg" alt="Logo" style="height:28px; vertical-align: middle;"> Zapytaj AI</h3>
+      <h3>
+        <img src="images/4.1.webp" alt="Zapytaj AI" style="height:28px; vertical-align: middle;">
+        Zapytaj AI
+      </h3>
       <textarea id="aiQuestion" rows="4" style="width: 100%; padding: 10px; font-size: 1em;" placeholder="Wpisz pytanie..."></textarea>
       <button class="btn" id="submitAI">Wyślij</button>
       <div id="aiAnswer" style="margin-top: 20px; font-size: 1em;"></div>
@@ -462,7 +506,7 @@
         aiAnswer.innerHTML = `
           <strong>AI Odpowiada:</strong>
           <br>
-          Spróbuj podejść do zadania etapami – rozpocznij od najmniejszych kroków i stopniowo zwiększaj trudność.
+          Spróbuj podzielić zadanie na małe etapy i nagradzaj się za każdy ukończony krok!
         `;
       }, 2000);
     });
